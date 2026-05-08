@@ -1,0 +1,2 @@
+import Gate3Table from './Gate3Table';
+export default function Gate3IssuesPanel({ items }){return <Gate3Table rows={items} columns={[{key:'code',label:'Código'},{key:'description',label:'Descrição'},{key:'impact',label:'Impacto'},{key:'owner',label:'Responsável'},{key:'status',label:'Status',badge:true},{key:'correctionPlan',label:'Plano correção'},{key:'targetResolutionDate',label:'Solução prevista'}]} getAlert={r=>r.status==='Crítica'}/>}

@@ -1,0 +1,3 @@
+import Gate3Table from './Gate3Table';
+const list=(value)=>Array.isArray(value)?value.join(', '):value;
+export default function Gate3MeetingsPanel({ items }){return <Gate3Table rows={items} columns={[{key:'date',label:'Data'},{key:'meetingType',label:'Tipo'},{key:'participants',label:'Participantes',render:r=>list(r.participants)},{key:'topics',label:'Assuntos',render:r=>list(r.topics)},{key:'decisions',label:'Decisões',render:r=>list(r.decisions)},{key:'pendingItemsGenerated',label:'Pendências geradas',render:r=>list(r.pendingItemsGenerated)},{key:'risksIdentified',label:'Riscos',render:r=>list(r.risksIdentified)},{key:'nextSteps',label:'Próximos passos',render:r=>list(r.nextSteps)}]} />}

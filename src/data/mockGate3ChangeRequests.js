@@ -1,0 +1,4 @@
+export const mockGate3ChangeRequests = [
+ { id:'CR-001', projectId:'PRJ-001', workstreamId:'WS-001', code:'MUD-001', request:'Incluir customização de relatório gerencial de folha.', origin:'Solicitação sponsor', deadlineImpact:'Avaliação indica +8 dias', costImpact:'Necessita orçamento adicional', scopeImpact:'Amplia escopo original', projectManagerOpinion:'Tratar como mudança formal com impacto em prazo e custo.', technicalOpinion:'Viável mediante especificação detalhada.', status:'Em análise', decision:'Pendente de aprovação executiva' },
+ { id:'CR-002', projectId:'PRJ-001', workstreamId:'WS-002', code:'MUD-002', request:'Adicionar etapa extra de aprovação no ATS.', origin:'RH Rossi', deadlineImpact:'Baixo', costImpact:'Sem impacto estimado', scopeImpact:'Ajuste configurável', projectManagerOpinion:'Pode seguir após validação do desenho.', technicalOpinion:'Configuração padrão do produto.', status:'Solicitada', decision:'Em avaliação' },
+];

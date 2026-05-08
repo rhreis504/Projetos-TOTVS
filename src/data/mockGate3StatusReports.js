@@ -1,0 +1,3 @@
+export const mockGate3StatusReports = [
+ { id:'SR-001', projectId:'PRJ-001', referenceWeek:'2026-W19', lastWeekDone:'Kickoff Gate 3 realizado, frentes mapeadas e riscos iniciais registrados.', currentWeekPlan:'Validar regras de folha, preparar dados Feedz e confirmar integração Ahgora.', nextActivities:'Parametrização RM, desenho ATS e plano de dependências.', attentionPoints:'Pendência vencida em folha e issue crítica de carga.', risks:'RSK-001 em aberto; RSK-002 monitorado.', pendingItems:'PEN-001 vencida; PEN-002 aberta.', requiredDecisions:'DEC-001 vencida e DEC-002 pendente.', projectHealth:'Atenção' },
+];

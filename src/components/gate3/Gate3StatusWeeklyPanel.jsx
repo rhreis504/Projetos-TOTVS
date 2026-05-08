@@ -1,0 +1,2 @@
+import Gate3Table from './Gate3Table';
+export default function Gate3StatusWeeklyPanel({ items }){return <Gate3Table rows={items} columns={[{key:'referenceWeek',label:'Semana'},{key:'lastWeekDone',label:'Feito semana passada'},{key:'currentWeekPlan',label:'Plano atual'},{key:'nextActivities',label:'Próximas atividades'},{key:'attentionPoints',label:'Pontos atenção'},{key:'risks',label:'Riscos'},{key:'pendingItems',label:'Pendências'},{key:'requiredDecisions',label:'Decisões necessárias'},{key:'projectHealth',label:'Saúde',badge:true}]} />}

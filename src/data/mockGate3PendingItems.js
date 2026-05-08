@@ -1,0 +1,5 @@
+export const mockGate3PendingItems = [
+ { id:'PEN-001', projectId:'PRJ-001', workstreamId:'WS-001', code:'PEN-001', description:'Cliente validar tabela de eventos de folha.', owner:'Mariana Souza', origin:'Workshop folha', deadline:'2026-05-13', aging:2, priority:'Alta', status:'Vencida', impact:'Atraso na parametrização final', actionPlan:'Reunião extraordinária com RH e DP.' },
+ { id:'PEN-002', projectId:'PRJ-001', workstreamId:'WS-006', code:'PEN-002', description:'Definir responsável técnico pela integração Ahgora.', owner:'Regis Reis', origin:'Planejamento de integração', deadline:'2026-05-24', aging:0, priority:'Crítica', status:'Aberta', impact:'Pode bloquear início da frente de ponto', actionPlan:'Formalizar responsável na próxima daily.' },
+ { id:'PEN-003', projectId:'PRJ-001', workstreamId:'WS-004', code:'PEN-003', description:'Receber base cadastral para Feedz.', owner:'Dalete Titton', origin:'Kickoff Feedz', deadline:'2026-05-18', aging:0, priority:'Média', status:'Em andamento', impact:'Impacta configuração inicial do Feedz', actionPlan:'Cliente enviará base sanitizada.' },
+];

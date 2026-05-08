@@ -1,0 +1,2 @@
+import Gate3Table from './Gate3Table';
+export default function Gate3ChangeRequestsPanel({ items }){return <Gate3Table rows={items} columns={[{key:'code',label:'Código'},{key:'request',label:'Solicitação'},{key:'origin',label:'Origem'},{key:'deadlineImpact',label:'Impacto prazo'},{key:'costImpact',label:'Impacto custo'},{key:'scopeImpact',label:'Impacto escopo'},{key:'projectManagerOpinion',label:'Parecer GP'},{key:'technicalOpinion',label:'Parecer técnico'},{key:'status',label:'Status',badge:true},{key:'decision',label:'Decisão'}]} />}
