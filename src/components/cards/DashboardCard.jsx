@@ -1,0 +1,3 @@
+import { DynamicIcon } from '../ui/icons';
+import { navigateTo } from '../../utils/navigation';
+export default function DashboardCard({ title, icon, color, bg, to }) { return <button onClick={() => to && navigateTo(to)} className="text-left bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow cursor-pointer group flex flex-col h-full"><div className={`w-12 h-12 rounded-lg ${bg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}><DynamicIcon name={icon} className={`w-6 h-6 ${color}`} /></div><h3 className="text-slate-800 font-semibold mb-2">{title}</h3><p className="text-sm text-slate-500 mt-auto">Acessar módulo</p></button>; }

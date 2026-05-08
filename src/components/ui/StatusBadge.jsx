@@ -1,0 +1,2 @@
+const styles = { sucesso: 'text-emerald-600 bg-emerald-50 border-emerald-200', atencao: 'text-amber-600 bg-amber-50 border-amber-200', critico: 'text-red-600 bg-red-50 border-red-200', info: 'text-sky-600 bg-sky-50 border-sky-200', neutro: 'text-slate-600 bg-slate-50 border-slate-200' };
+export default function StatusBadge({ children, variant='neutro' }) { return <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${styles[variant]}`}>{children}</span>; }

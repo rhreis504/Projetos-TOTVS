@@ -1,0 +1,5 @@
+import PageTitle from '../../components/ui/PageTitle';
+import AgfJourney from '../../components/agf/AgfJourney';
+import { agfGates } from '../../data/agfGates';
+import { navigateTo } from '../../utils/navigation';
+export default function AgfOverviewPage(){return <><PageTitle title="Jornada AGF" subtitle="Governança por gates para conduzir projetos do nascimento à transição operacional."/><section className="bg-slate-900 text-white rounded-2xl p-6 mb-6 shadow-sm"><div className="flex flex-wrap items-center gap-3 text-lg font-bold"><span>HUBX</span><span className="text-blue-300">→</span><span>AGF</span><span className="text-blue-300">→</span><span>ORBIT</span></div><p className="text-sm text-slate-300 mt-3">Fluxo executivo integrado para qualificação, execução governada e evolução contínua pós-Go Live.</p><button onClick={()=>navigateTo('/agf/arvore')} className="mt-5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Acessar Árvore de Gates</button></section><AgfJourney gates={agfGates}/></>}
