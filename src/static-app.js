@@ -23,6 +23,37 @@ const gates = [
   ['3', 'Gate 3 · Execução', 'Construção, validações, integrações e gestão diária da implantação.', 'Próximo', 'green'],
   ['4', 'Gate 4 · Go-live', 'Preparação, corte, estabilização e sustentação assistida.', 'Monitorar', 'amber'],
 ];
+
+const gate3Stages = [
+  ['6.1', 'Início da Execução', 'Confirmação formal do início operacional do projeto.', 'Plano de execução ativado · baseline operacional confirmada · equipe e cliente sincronizados · critérios de acompanhamento definidos'],
+  ['6.2', 'Gestão das Atividades', 'Controle das tarefas executadas pelo time.', 'Atividades por pacote de trabalho · dependências monitoradas · evidências vinculadas · esforço previsto x realizado'],
+  ['6.3', 'Gestão das Entregas', 'Acompanhamento dos entregáveis do projeto.', 'Entregas por marco · critérios de aceite vinculados · evidências obrigatórias · preparação automática para Gate 4'],
+  ['6.4', 'Gestão de Impedimentos', 'Registro e tratamento dos bloqueios da execução.', 'Severidade · escalonamento · plano de ação · decisão registrada · impacto em prazo, custo e escopo'],
+  ['6.5', 'Gestão de Riscos Operacionais', 'Monitoramento dos riscos durante a execução.', 'Severidade · tendência · gatilhos · contingência · reavaliação pela IA'],
+  ['6.6', 'Controle de Escopo', 'Garantia de que a execução respeita o escopo aprovado.', 'Change request formal · impacto em prazo, custo, esforço e qualidade · aprovação obrigatória · histórico de decisão'],
+  ['6.7', 'Controle de Prazo e Esforço', 'Acompanhamento da evolução real contra o planejado.', 'Baseline x realizado · caminho crítico · desvio de esforço · previsão de impacto futuro · recomendação da IA'],
+  ['6.8', 'Comunicação e Status Report', 'Formalização da comunicação do andamento do projeto.', 'Status executivo · indicadores · riscos · impedimentos · decisões pendentes · recomendações da IA · registro para comitê'],
+  ['6.9', 'Preparação para Validação', 'Organização dos pacotes que serão avaliados no Gate 4.', 'Pacote de validação completo · evidências anexadas · pendências identificadas · checklist de qualidade inicial · envio controlado para Gate 4'],
+];
+const gate3Controls = [
+  ['Atividade / pacote', 'Parametrização RM Folha', 'Regis Reis', 'Em execução', '12/05/2026', 'Hard'],
+  ['Entregável', 'Plano de integração Ahgora', 'Líder técnico', 'Pronto para validação', '15/05/2026', 'Hard'],
+  ['Impedimento', 'Carga inicial de rubricas com divergência', 'Cliente', 'Escalonar', '10/05/2026', 'Hard'],
+  ['Risco operacional', 'Baixa disponibilidade dos key users', 'Sponsor', 'Monitorar', '17/05/2026', 'Hard'],
+  ['Mudança de escopo', 'Inclusão de fluxo complementar Feedz', 'PMO', 'Em análise', '20/05/2026', 'Hard'],
+  ['Status report', 'Relatório executivo semanal', 'PM', 'Emitido', '08/05/2026', 'Hard'],
+];
+const gate3ScoreBands = [
+  ['80–100', 'Execução saudável', 'Mantém execução com acompanhamento regular.', 'green'],
+  ['60–79', 'Execução com atenção', 'Mantém execução com ações corretivas.', 'amber'],
+  ['40–59', 'Execução em risco', 'Exige plano de recuperação.', 'amber'],
+  ['0–39', 'Execução crítica', 'Exige escalonamento e possível bloqueio.', 'red'],
+];
+const gate3AiOutputs = ['Score de execução', 'Análise de desempenho', 'Riscos ocultos', 'Tendência de atraso', 'Tendência de estouro de esforço', 'Pontos críticos de escopo', 'Recomendações de ação', 'Alertas de impedimentos', 'Sugestão de escalonamento', 'Pacotes para Gate 4'];
+const gate3Baseline = ['Atividades', 'Entregas', 'Responsáveis', 'Prazos', 'Esforço', 'Riscos', 'Impedimentos', 'Mudanças', 'Status reports', 'Evidências', 'Decisões'];
+const gate3Artifacts = ['Plano de execução atualizado', 'Controle de atividades', 'Controle de entregas', 'Registro de impedimentos', 'Registro de riscos operacionais', 'Controle de mudanças', 'Status report', 'Relatório de desvios', 'Pacotes de validação para Gate 4', 'Histórico de decisões', 'Score de execução'];
+const gate3Roles = ['PM', 'PMO', 'Equipe técnica', 'Líder técnico', 'Cliente', 'Key users', 'Sponsor', 'Comitê', 'IA'];
+
 const risks = [
   ['Integração fiscal', 'Alto', 'red'], ['Disponibilidade de key users', 'Médio', 'amber'], ['Migração de dados', 'Médio', 'amber'], ['Ambiente homologação', 'Baixo', 'green'],
 ];
@@ -117,10 +148,34 @@ function agfPage(projectId) {
   return `<section class="hero"><h1>${project ? `Jornada AGF · ${esc(project.name)}` : 'Jornada AGF'}</h1><p>${esc(intro)}</p></section><section class="grid"><article class="card full gate-list">${gates.map(([id, title, desc, status, color]) => `<div class="gate"><div><strong>${esc(title)}</strong><p class="muted">${esc(desc)}</p>${badge(status, color)}</div><a class="action-link" href="${href(`${gateBasePath}/${id}`)}" data-route="${gateBasePath}/${id}">Abrir gate →</a></div>`).join('')}</article><article class="card"><h3>Árvore de gates</h3><p class="muted">Veja a estrutura completa da jornada.</p><a class="action-link" href="${href('/agf/arvore')}" data-route="/agf/arvore">Abrir árvore →</a></article>${project ? `<article class="card"><h3>Detalhes do projeto</h3><p class="muted">Consulte o contexto completo do projeto selecionado.</p><a class="action-link" href="${href(`/projetos/${project.id}`)}" data-route="/projetos/${project.id}">Ver detalhes →</a></article>` : ''}</section>`;
 }
 function gateTreePage() { return `<section class="hero"><h1>Árvore AGF</h1><p>Sequência de decisões, evidências e aprovações da implantação.</p></section><section class="grid">${gates.map(([id, title, desc, status, color]) => `<article class="card"><h3>${esc(title)}</h3><p class="muted">${esc(desc)}</p>${badge(status, color)}<br><a class="action-link" href="${href(`/agf/gate/${id}`)}" data-route="/agf/gate/${id}">Detalhar →</a></article>`).join('')}</section>`; }
+function gate3ExecutionPage(project) {
+  const score = project ? 72 : 68;
+  const projectName = project ? project.name : 'Projeto selecionado';
+  const agfLevel = project ? project.agfLevel : 'Hard';
+  return `<section class="hero gate3-hero"><p class="eyebrow">Gate 3 · Execução Controlada e Gestão Operacional</p><h1>${esc(projectName)} · Gate 3 · Execução</h1><p>Conduz a execução real do projeto de forma controlada, integrando PMBOK, governança AGF, operação ágil, status report, riscos, impedimentos, escopo, prazo, esforço, qualidade e recomendações da IA.</p><div class="hero-actions">${project ? `<a class="hero-btn light" href="${href(`/projetos/${project.id}/agf`)}" data-route="/projetos/${project.id}/agf">Voltar à Jornada AGF</a>` : `<a class="hero-btn light" href="${href('/portfolio')}" data-route="/portfolio">Selecionar projeto</a>`}<a class="hero-btn" href="#gate3-script">Ver script completo</a></div></section>
+  <section class="grid gate3-dashboard">
+    ${kpi('Score de execução', `${score}/100`, 'Execução com atenção')}
+    ${kpi('Nível AGF', agfLevel, 'Vem do Gate 0 e não pode ser alterado')}
+    ${kpi('Status operacional', 'Em execução', 'Controle contínuo ativo')}
+    <article class="card wide"><h3>Definição e objetivo</h3><p class="muted">O Gate 3 transforma o planejamento aprovado em execução monitorada, evitando avanço no improviso e preparando cada pacote para validação no Gate 4.</p><ul class="list compact"><li><span>Entregas controladas por fases, pacotes ou marcos</span>${badge('Ativo')}</li><li><span>Desvios identificados rapidamente</span>${badge('Monitorar', 'amber')}</li><li><span>IA apoiando análise de desempenho e tendências</span>${badge('Em curso', 'amber')}</li></ul></article>
+    <article class="card full"><h3>Modelo de operação por complexidade</h3><div class="three-cols"><div><strong>Simple</strong><p class="muted">Execução objetiva, controle essencial, baixa formalização e alta velocidade.</p></div><div><strong>Medium</strong><p class="muted">Execução estruturada, controle periódico e gestão equilibrada de prazo, escopo e riscos.</p></div><div><strong>Hard</strong><p class="muted">Execução rigorosa, governança ativa, evidências obrigatórias e bloqueio de avanço sem conformidade.</p></div></div></article>
+    <article class="card full"><h3>Campos obrigatórios da execução</h3><div class="form-grid"><label>Data de início operacional<input value="${esc(project?.startDate || '2026-05-08')}" readonly></label><label>Baseline operacional<input value="Confirmada" readonly></label><label>Frequência de status report<input value="Semanal" readonly></label><label>Rito ágil<input value="Daily + planning + review operacional" readonly></label><label>Critério de continuidade<input value="Score 60–79: ações corretivas obrigatórias" readonly></label><label>Preparação Gate 4<input value="Pacotes prontos por entregável" readonly></label></div></article>
+    <article class="card full" id="gate3-script"><h3>Script completo do Gate 3</h3><div class="stage-grid">${gate3Stages.map(([code, title, desc, hard]) => `<div class="stage-card"><span>${esc(code)}</span><strong>${esc(title)}</strong><p>${esc(desc)}</p><small>${esc(hard)}</small></div>`).join('')}</div></article>
+    <article class="card full table-wrap"><h3>Controle operacional integrado PMBOK + Ágil</h3><table><thead><tr><th>Área / backlog</th><th>Item controlado</th><th>Responsável</th><th>Status</th><th>Prazo</th><th>Rigor</th></tr></thead><tbody>${gate3Controls.map(row => `<tr>${row.map(cell => `<td>${esc(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table></article>
+    <article class="card wide"><h3>Score de execução e continuidade</h3><ul class="list">${gate3ScoreBands.map(([range, label, rule, color]) => `<li><span><strong>${esc(range)}</strong> · ${esc(label)}<br><small>${esc(rule)}</small></span>${badge(label, color)}</li>`).join('')}</ul><p class="muted small-note">Decisão divergente da recomendação da IA exige justificativa formal.</p></article>
+    <article class="card"><h3>Saída da IA</h3><div class="pill-list">${gate3AiOutputs.map(item => `<span>${esc(item)}</span>`).join('')}</div></article>
+    <article class="card"><h3>Baseline de execução</h3><div class="pill-list">${gate3Baseline.map(item => `<span>${esc(item)}</span>`).join('')}</div></article>
+    <article class="card wide"><h3>Regras de governança</h3><ul class="check-list"><li>Atividades atualizadas e entregas rastreadas.</li><li>Impedimentos tratados, riscos monitorados e mudanças registradas.</li><li>Status report emitido, desvios justificados e evidências anexadas conforme complexidade.</li><li>Pacotes preparados para validação no Gate 4.</li></ul></article>
+    <article class="card wide"><h3>Artefatos gerados</h3><div class="pill-list">${gate3Artifacts.map(item => `<span>${esc(item)}</span>`).join('')}</div></article>
+    <article class="card"><h3>Papéis envolvidos</h3><div class="pill-list">${gate3Roles.map(item => `<span>${esc(item)}</span>`).join('')}</div></article>
+    <article class="card full"><h3>Resultado esperado</h3><p class="muted">Execução em andamento com controle, entregas acompanhadas, atividades atualizadas, impedimentos tratados, riscos monitorados, escopo controlado, status report gerado, indicadores operacionais atualizados, score de execução e pacotes prontos para o Gate 4.</p></article>
+  </section>`;
+}
 function gatePage(id, projectId) {
   const gate = gates.find(g => g[0] === id) || gates[0];
   const project = projectId ? findProject(projectId) : null;
   if (projectId && !project) return notFound();
+  if (id === '3') return gate3ExecutionPage(project);
   return `<section class="hero"><h1>${project ? `${esc(project.name)} · ` : ''}${esc(gate[1])}</h1><p>${esc(gate[2])}</p></section><section class="grid"><article class="card"><h3>Status</h3><div class="kpi">${esc(gate[3])}</div>${badge(gate[3], gate[4])}</article><article class="card wide"><h3>Critérios de aceite</h3><ul class="list"><li><span>Plano validado com stakeholders</span>${badge('OK')}</li><li><span>Riscos classificados e mitigados</span>${badge('Monitorar', 'amber')}</li><li><span>Evidências anexadas ao comitê</span>${badge('Em curso', 'amber')}</li></ul>${project ? `<a class="action-link" href="${href(`/projetos/${project.id}/agf`)}" data-route="/projetos/${project.id}/agf">Voltar à Jornada AGF →</a>` : ''}</article></section>`;
 }
 function cockpitPage() { return `<section class="hero"><h1>Cockpit Executivo</h1><p>Indicadores executivos para tomada de decisão.</p></section><section class="grid">${kpi('SPI', '0.96', 'Cronograma sob controle')}${kpi('CPI', '1.02', 'Custo saudável')}${kpi('Satisfação', '91%', 'Pesquisa semanal')}<article class="card full"><h3>Alertas executivos</h3><ul class="list">${risks.slice(0,3).map(([r, l, c]) => `<li><span>${esc(r)}</span>${badge(l, c)}</li>`).join('')}</ul></article></section>`; }
