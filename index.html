@@ -84,6 +84,8 @@
         },
       };
 
+      const totvsWallpaperUrl = 'assets/images/Papel_de_Parede%20TOTVS.png';
+
       const profileNames = {
         cliente: 'Cliente',
         totvs: 'TOTVS',
@@ -138,7 +140,10 @@
         };
 
         return (
-          <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 flex flex-col justify-center items-center p-4">
+          <div
+            className="min-h-screen bg-slate-900 bg-cover bg-center bg-no-repeat flex flex-col justify-center items-center p-4 relative"
+            style={{ backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.42), rgba(15, 23, 42, 0.42)), url('${totvsWallpaperUrl}')` }}
+          >
             <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden">
               {/* Header do Login */}
               <div className="bg-slate-900 p-8 text-center relative overflow-hidden">
@@ -349,7 +354,10 @@
         const content = homeContentConfig[profile] || homeContentConfig.cliente;
 
         return (
-          <div className="min-h-screen bg-slate-50 flex">
+          <div
+            className="min-h-screen bg-slate-50 bg-cover bg-center bg-fixed bg-no-repeat flex"
+            style={{ backgroundImage: `linear-gradient(rgba(248, 250, 252, 0.86), rgba(248, 250, 252, 0.86)), url('${totvsWallpaperUrl}')` }}
+          >
             <Sidebar
               isOpen={isSidebarOpen}
               onClose={() => setIsSidebarOpen(false)}
