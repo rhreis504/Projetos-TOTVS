@@ -94,6 +94,11 @@ button { cursor: pointer; }
 .list { margin: 12px 0 0; padding: 0; list-style: none; }
 .list li { display: flex; justify-content: space-between; gap: 14px; border-top: 1px solid var(--slate-200); padding: 12px 0; color: var(--slate-600); }
 .action-link { display: inline-flex; margin-top: 12px; color: var(--blue-700); font-weight: 900; }
+.secondary-link { display: inline-flex; margin-top: 8px; color: var(--slate-600); font-size: 13px; font-weight: 800; }
+.secondary-link:hover, .action-link:hover { text-decoration: underline; }
+.actions-cell { min-width: 150px; }
+.actions-cell .action-link, .actions-cell .secondary-link { margin-top: 0; }
+.actions-cell .secondary-link { margin-left: 14px; }
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; min-width: 620px; }
 th, td { text-align: left; border-bottom: 1px solid var(--slate-200); padding: 12px 10px; }
