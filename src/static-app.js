@@ -13,7 +13,9 @@ const menu = [
 const systemMenu = [['Configurações', '/configuracoes', '⚙']];
 const pageTitles = Object.fromEntries([...menu, ...systemMenu].map(([label, path]) => [path, label]));
 const projects = [
-  ['ERP Cloud', 'Em execução', '72%', 'green'], ['Backoffice Protheus', 'Atenção', '54%', 'amber'], ['RH Digital', 'Planejamento', '31%', 'green'], ['Fiscal Sync', 'Risco', '43%', 'red'],
+  { id: 'PRJ-001', code: 'ROSSI-RH-2026', name: 'Implantação RH Rossi', clientName: 'Rossi Supermercados', status: 'Em execução', progress: '38%', color: 'amber', currentGate: '3', agfLevel: 'Hard', description: 'Implantação integrada das soluções de RH, folha, ponto, admissão digital, ATS, LMS/LXP, Feedz, Quirons e Ahgora.' },
+  { id: 'PRJ-002', code: 'AURORA-ERP-2026', name: 'Implantação ERP Protheus', clientName: 'Grupo Aurora', status: 'Em planejamento', progress: '14%', color: 'green', currentGate: '1', agfLevel: 'Medium', description: 'Implantação de ERP com foco financeiro, fiscal e suprimentos.' },
+  { id: 'PRJ-003', code: 'HORIZONTE-RH-2026', name: 'Rollout RH', clientName: 'Rede Horizonte', status: 'Crítico', progress: '72%', color: 'red', currentGate: '4', agfLevel: 'Simple', description: 'Rollout de RH e folha para novas unidades.' },
 ];
 const gates = [
   ['1', 'Gate 1 · Descoberta', 'Entendimento inicial, objetivos e restrições do projeto.', 'Concluído', 'green'],
@@ -51,6 +53,8 @@ function esc(value) {
   return String(value).replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
 }
 function badge(text, color = 'green') { return `<span class="badge ${color}">${esc(text)}</span>`; }
+function healthLabel(color) { return color === 'red' ? 'Crítico' : color === 'amber' ? 'Atenção' : 'Saudável'; }
+function findProject(projectId) { return projects.find(project => project.id === projectId); }
 function shell(content, title) {
   const current = appPath();
   const nav = menu.map(([label, path, icon]) => navLink(label, path, icon, current)).join('');
@@ -69,7 +73,7 @@ function shell(content, title) {
   </div>`;
 }
 function navLink(label, path, icon, current) {
-  const active = current === path || (path === '/agf' && current.startsWith('/agf/'));
+  const active = current === path || (path === '/agf' && (current.startsWith('/agf/') || /^\/projetos\/[^/]+\/agf/.test(current))) || (path === '/portfolio' && /^\/projetos\/[^/]+$/.test(current));
   return `<a class="nav-link ${active ? 'active' : ''}" href="${href(path)}" data-route="${path}"><span>${icon}</span><span>${esc(label)}</span></a>`;
 }
 function login() {
@@ -98,15 +102,26 @@ function homePage() {
 }
 function kpi(title, number, subtitle) { return `<article class="card"><h3>${esc(title)}</h3><div class="kpi">${esc(number)}</div><p class="muted">${esc(subtitle)}</p></article>`; }
 function portfolioPage() {
-  return `<section class="hero"><h1>Portfólio de Projetos</h1><p>Visão consolidada dos projetos, status e avanço por frente.</p></section><section class="grid"><article class="card full table-wrap"><table><thead><tr><th>Projeto</th><th>Status</th><th>Progresso</th><th>Saúde</th></tr></thead><tbody>${projects.map(([name, status, progress, color]) => `<tr><td><strong>${name}</strong></td><td>${esc(status)}</td><td>${progress}</td><td>${badge(color === 'red' ? 'Crítico' : color === 'amber' ? 'Atenção' : 'Saudável', color)}</td></tr>`).join('')}</tbody></table></article></section>`;
+  return `<section class="hero"><h1>Portfólio de Projetos</h1><p>Selecione um projeto pelo link de ação para abrir o fluxo da Jornada AGF.</p></section><section class="grid"><article class="card full table-wrap"><table><thead><tr><th>Projeto</th><th>Cliente</th><th>Status</th><th>Progresso</th><th>Saúde</th><th>Ações</th></tr></thead><tbody>${projects.map(project => `<tr><td><strong>${esc(project.name)}</strong><br><span class="muted">${esc(project.code)}</span></td><td>${esc(project.clientName)}</td><td>${esc(project.status)}</td><td>${esc(project.progress)}</td><td>${badge(healthLabel(project.color), project.color)}</td><td class="actions-cell"><a class="action-link" href="${href(`/projetos/${project.id}/agf`)}" data-route="/projetos/${project.id}/agf">Abrir projeto →</a><a class="secondary-link" href="${href(`/projetos/${project.id}`)}" data-route="/projetos/${project.id}">Detalhes</a></td></tr>`).join('')}</tbody></table></article></section>`;
 }
-function agfPage() {
-  return `<section class="hero"><h1>Jornada AGF</h1><p>Modelo de governança por gates para aumentar previsibilidade e transparência.</p></section><section class="grid"><article class="card full gate-list">${gates.map(([id, title, desc, status, color]) => `<div class="gate"><div><strong>${esc(title)}</strong><p class="muted">${esc(desc)}</p>${badge(status, color)}</div><a class="action-link" href="${href(`/agf/gate/${id}`)}" data-route="/agf/gate/${id}">Abrir gate →</a></div>`).join('')}</article><article class="card"><h3>Árvore de gates</h3><p class="muted">Veja a estrutura completa da jornada.</p><a class="action-link" href="${href('/agf/arvore')}" data-route="/agf/arvore">Abrir árvore →</a></article></section>`;
+function projectDetailPage(projectId) {
+  const project = findProject(projectId);
+  if (!project) return notFound();
+  return `<section class="hero"><h1>${esc(project.name)}</h1><p>${esc(project.description)}</p></section><section class="grid"><article class="card wide"><h3>${esc(project.clientName)}</h3><p class="muted">Código: ${esc(project.code)} · Nível AGF: ${esc(project.agfLevel)}</p><ul class="list"><li><span>Status</span>${badge(project.status, project.color)}</li><li><span>Gate atual</span>${badge(`Gate ${project.currentGate}`, project.color)}</li><li><span>Progresso</span><strong>${esc(project.progress)}</strong></li></ul><a class="action-link" href="${href(`/projetos/${project.id}/agf`)}" data-route="/projetos/${project.id}/agf">Acessar Jornada AGF →</a></article><article class="card"><h3>Trocar projeto</h3><p class="muted">Volte ao portfólio para selecionar outro projeto.</p><a class="action-link" href="${href('/portfolio')}" data-route="/portfolio">Voltar ao Portfólio →</a></article></section>`;
+}
+function agfPage(projectId) {
+  const project = projectId ? findProject(projectId) : null;
+  if (projectId && !project) return notFound();
+  const gateBasePath = project ? `/projetos/${project.id}/agf/gate` : '/agf/gate';
+  const intro = project ? `Fluxo AGF vinculado ao projeto ${project.name}.` : 'Modelo de governança por gates para aumentar previsibilidade e transparência.';
+  return `<section class="hero"><h1>${project ? `Jornada AGF · ${esc(project.name)}` : 'Jornada AGF'}</h1><p>${esc(intro)}</p></section><section class="grid"><article class="card full gate-list">${gates.map(([id, title, desc, status, color]) => `<div class="gate"><div><strong>${esc(title)}</strong><p class="muted">${esc(desc)}</p>${badge(status, color)}</div><a class="action-link" href="${href(`${gateBasePath}/${id}`)}" data-route="${gateBasePath}/${id}">Abrir gate →</a></div>`).join('')}</article><article class="card"><h3>Árvore de gates</h3><p class="muted">Veja a estrutura completa da jornada.</p><a class="action-link" href="${href('/agf/arvore')}" data-route="/agf/arvore">Abrir árvore →</a></article>${project ? `<article class="card"><h3>Detalhes do projeto</h3><p class="muted">Consulte o contexto completo do projeto selecionado.</p><a class="action-link" href="${href(`/projetos/${project.id}`)}" data-route="/projetos/${project.id}">Ver detalhes →</a></article>` : ''}</section>`;
 }
 function gateTreePage() { return `<section class="hero"><h1>Árvore AGF</h1><p>Sequência de decisões, evidências e aprovações da implantação.</p></section><section class="grid">${gates.map(([id, title, desc, status, color]) => `<article class="card"><h3>${esc(title)}</h3><p class="muted">${esc(desc)}</p>${badge(status, color)}<br><a class="action-link" href="${href(`/agf/gate/${id}`)}" data-route="/agf/gate/${id}">Detalhar →</a></article>`).join('')}</section>`; }
-function gatePage(id) {
+function gatePage(id, projectId) {
   const gate = gates.find(g => g[0] === id) || gates[0];
-  return `<section class="hero"><h1>${esc(gate[1])}</h1><p>${esc(gate[2])}</p></section><section class="grid"><article class="card"><h3>Status</h3><div class="kpi">${esc(gate[3])}</div>${badge(gate[3], gate[4])}</article><article class="card wide"><h3>Critérios de aceite</h3><ul class="list"><li><span>Plano validado com stakeholders</span>${badge('OK')}</li><li><span>Riscos classificados e mitigados</span>${badge('Monitorar', 'amber')}</li><li><span>Evidências anexadas ao comitê</span>${badge('Em curso', 'amber')}</li></ul></article></section>`;
+  const project = projectId ? findProject(projectId) : null;
+  if (projectId && !project) return notFound();
+  return `<section class="hero"><h1>${project ? `${esc(project.name)} · ` : ''}${esc(gate[1])}</h1><p>${esc(gate[2])}</p></section><section class="grid"><article class="card"><h3>Status</h3><div class="kpi">${esc(gate[3])}</div>${badge(gate[3], gate[4])}</article><article class="card wide"><h3>Critérios de aceite</h3><ul class="list"><li><span>Plano validado com stakeholders</span>${badge('OK')}</li><li><span>Riscos classificados e mitigados</span>${badge('Monitorar', 'amber')}</li><li><span>Evidências anexadas ao comitê</span>${badge('Em curso', 'amber')}</li></ul>${project ? `<a class="action-link" href="${href(`/projetos/${project.id}/agf`)}" data-route="/projetos/${project.id}/agf">Voltar à Jornada AGF →</a>` : ''}</article></section>`;
 }
 function cockpitPage() { return `<section class="hero"><h1>Cockpit Executivo</h1><p>Indicadores executivos para tomada de decisão.</p></section><section class="grid">${kpi('SPI', '0.96', 'Cronograma sob controle')}${kpi('CPI', '1.02', 'Custo saudável')}${kpi('Satisfação', '91%', 'Pesquisa semanal')}<article class="card full"><h3>Alertas executivos</h3><ul class="list">${risks.slice(0,3).map(([r, l, c]) => `<li><span>${esc(r)}</span>${badge(l, c)}</li>`).join('')}</ul></article></section>`; }
 function statusReportPage() { return `<section class="hero"><h1>Status Report</h1><p>Resumo semanal padronizado para comunicação com stakeholders.</p></section><section class="grid"><article class="card full"><h3>Resumo</h3><p>A implantação segue dentro do plano, com atenção especial para integração fiscal e disponibilidade de key users.</p></article>${kpi('Concluído', '68%', 'Evolução geral')}${kpi('Próximo marco', '13/05', 'Homologação')}${kpi('Decisões', '3', 'Pendentes no comitê')}</section>`; }
@@ -135,8 +150,16 @@ function render() {
   if (!currentProfile) root.innerHTML = login();
   else {
     const gateMatch = path.match(/^\/agf\/gate\/(\d)$/);
-    const content = gateMatch ? gatePage(gateMatch[1]) : (routes[path] ? routes[path]() : notFound());
-    root.innerHTML = shell(content, pageTitles[path] || (gateMatch ? `Gate ${gateMatch[1]}` : 'Adaptive One'));
+    const projectGateMatch = path.match(/^\/projetos\/([^/]+)\/agf\/gate\/(\d)$/);
+    const projectAgfMatch = path.match(/^\/projetos\/([^/]+)\/agf$/);
+    const projectMatch = path.match(/^\/projetos\/([^/]+)$/);
+    const content = projectGateMatch ? gatePage(projectGateMatch[2], projectGateMatch[1])
+      : projectAgfMatch ? agfPage(projectAgfMatch[1])
+        : projectMatch ? projectDetailPage(projectMatch[1])
+          : gateMatch ? gatePage(gateMatch[1])
+            : (routes[path] ? routes[path]() : notFound());
+    const title = projectGateMatch ? `Gate ${projectGateMatch[2]}` : projectAgfMatch ? 'Jornada AGF do Projeto' : projectMatch ? 'Detalhe do Projeto' : pageTitles[path] || (gateMatch ? `Gate ${gateMatch[1]}` : 'Adaptive One');
+    root.innerHTML = shell(content, title);
   }
   bindEvents();
 }

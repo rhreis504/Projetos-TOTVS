@@ -2,13 +2,18 @@ import PageTitle from '../components/ui/PageTitle';
 import StatusBadge from '../components/ui/StatusBadge';
 import { mockProjects } from '../data/mockProjects';
 import { navigateTo } from '../utils/navigation';
+import { toBrowserPath } from '../utils/basePath';
 import { setActiveProject } from '../utils/projectContext';
 
 const variant = (health) => (health === 'Crítico' || health === 'Bloqueado' ? 'critico' : health === 'Atenção' ? 'atencao' : 'sucesso');
 
+function projectPath(projectId, destination = 'agf') {
+  return destination === 'detail' ? `/projetos/${projectId}` : `/projetos/${projectId}/agf`;
+}
+
 function selectProject(projectId, destination = 'agf') {
   setActiveProject(projectId);
-  navigateTo(destination === 'detail' ? `/projetos/${projectId}` : `/projetos/${projectId}/agf`);
+  navigateTo(projectPath(projectId, destination));
 }
 
 export default function PortfolioPage() {
@@ -22,17 +27,7 @@ export default function PortfolioPage() {
         {mockProjects.map((p) => (
           <article
             key={p.id}
-            role="link"
-            tabIndex={0}
-            aria-label={`Selecionar ${p.name} e abrir Jornada AGF`}
-            onClick={() => selectProject(p.id)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault();
-                selectProject(p.id);
-              }
-            }}
-            className="cursor-pointer rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md"
           >
             <div className="flex justify-between gap-3">
               <div>
@@ -50,26 +45,26 @@ export default function PortfolioPage() {
               <div><dt className="text-slate-500">Progresso</dt><dd className="font-medium text-slate-800">{p.progress}%</dd></div>
             </dl>
             <div className="mt-6 grid grid-cols-1 gap-3">
-              <button
-                type="button"
+              <a
+                href={toBrowserPath(projectPath(p.id))}
                 onClick={(event) => {
-                  event.stopPropagation();
+                  event.preventDefault();
                   selectProject(p.id);
                 }}
-                className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+                className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-blue-700"
               >
-                Selecionar e abrir Jornada AGF
-              </button>
-              <button
-                type="button"
+                Abrir projeto / Jornada AGF
+              </a>
+              <a
+                href={toBrowserPath(projectPath(p.id, 'detail'))}
                 onClick={(event) => {
-                  event.stopPropagation();
+                  event.preventDefault();
                   selectProject(p.id, 'detail');
                 }}
-                className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-center text-sm font-semibold text-slate-700 hover:bg-slate-50"
               >
                 Ver detalhes do projeto
-              </button>
+              </a>
             </div>
           </article>
         ))}
