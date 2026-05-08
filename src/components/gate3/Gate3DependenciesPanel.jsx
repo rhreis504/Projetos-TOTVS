@@ -1,0 +1,2 @@
+import Gate3Table from './Gate3Table';
+export default function Gate3DependenciesPanel({ items }){return <Gate3Table rows={items} columns={[{key:'dependency',label:'Dependência'},{key:'type',label:'Tipo'},{key:'owner',label:'Responsável'},{key:'impactedWorkstream',label:'Frente impactada'},{key:'status',label:'Status',badge:true},{key:'deadline',label:'Data limite'},{key:'impactIfDelayed',label:'Impacto se atrasar'}]} getAlert={r=>r.status==='Bloqueada'}/>}

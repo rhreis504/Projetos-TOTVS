@@ -1,0 +1,2 @@
+import Gate3Table from './Gate3Table';
+export default function Gate3ActionPlanPanel({ items }){return <Gate3Table rows={items} columns={[{key:'action',label:'Ação'},{key:'origin',label:'Origem'},{key:'owner',label:'Responsável'},{key:'deadline',label:'Prazo'},{key:'status',label:'Status',badge:true},{key:'priority',label:'Prioridade',badge:true},{key:'expectedImpact',label:'Impacto esperado'}]} getAlert={r=>r.status==='Vencida'||r.priority==='Crítica'}/>}

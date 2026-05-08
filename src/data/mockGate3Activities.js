@@ -1,0 +1,6 @@
+export const mockGate3Activities = [
+ { id:'ACT-001', projectId:'PRJ-001', workstreamId:'WS-001', title:'Parametrizar eventos de folha', description:'Configurar rubricas, incidências e regras base.', owner:'Paulo Nunes', startDate:'2026-05-08', endDate:'2026-05-22', status:'Em andamento', priority:'Alta', dependency:'Validação de regras pelo cliente', progress:45 },
+ { id:'ACT-002', projectId:'PRJ-001', workstreamId:'WS-006', title:'Validar arquitetura Ahgora', description:'Confirmar integração de ponto com folha.', owner:'Fernanda Lopes', startDate:'2026-06-10', endDate:'2026-06-17', status:'Bloqueada', priority:'Crítica', dependency:'Folha estável', progress:0 },
+ { id:'ACT-003', projectId:'PRJ-001', workstreamId:'WS-002', title:'Mapear fluxo de recrutamento', description:'Desenhar etapas do ATS com RH Rossi.', owner:'Carla Mota', startDate:'2026-05-20', endDate:'2026-05-29', status:'Não iniciada', priority:'Média', dependency:'Workshop com cliente', progress:0 },
+ { id:'ACT-004', projectId:'PRJ-001', workstreamId:'WS-004', title:'Carga cadastral temporária Feedz', description:'Preparar base manual para início antecipado.', owner:'Larissa Alves', startDate:'2026-05-27', endDate:'2026-06-07', status:'Atrasada', priority:'Alta', dependency:'Planilha de colaboradores', progress:20 },
+];

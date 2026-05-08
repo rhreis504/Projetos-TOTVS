@@ -4,5 +4,11 @@ export const routeTitles = {
   '/times': 'Times de Implantação', '/indicadores': 'Indicadores', '/orbit': 'ORBIT', '/configuracoes': 'Configurações',
   '/agf': 'Jornada AGF', '/agf/arvore': 'Árvore de Gates do AGF',
 };
-export function getPageTitle(path) { if (/^\/agf\/gate\/\d$/.test(path)) return `Gate ${path.split('/').pop()}`; return routeTitles[path] || 'Página não encontrada'; }
+export function getPageTitle(path) {
+  if (/^\/projetos\/[^/]+\/agf\/gate\/3$/.test(path)) return 'Gate 3 — Execução Controlada';
+  if (/^\/projetos\/[^/]+\/agf$/.test(path)) return 'Jornada AGF do Projeto';
+  if (/^\/projetos\/[^/]+$/.test(path)) return 'Detalhe do Projeto';
+  if (/^\/agf\/gate\/\d$/.test(path)) return `Gate ${path.split('/').pop()}`;
+  return routeTitles[path] || 'Página não encontrada';
+}
 export function isActivePath(current, itemPath) { return current === itemPath || (itemPath !== '/home' && current.startsWith(`${itemPath}/`)); }

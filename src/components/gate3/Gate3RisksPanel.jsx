@@ -1,0 +1,2 @@
+import Gate3Table from './Gate3Table';
+export default function Gate3RisksPanel({ items }){return <Gate3Table rows={items} columns={[{key:'code',label:'Código'},{key:'description',label:'Descrição'},{key:'probability',label:'Probabilidade'},{key:'impact',label:'Impacto'},{key:'severity',label:'Severidade',badge:true},{key:'owner',label:'Responsável'},{key:'mitigationPlan',label:'Mitigação'},{key:'trigger',label:'Gatilho'},{key:'status',label:'Status',badge:true}]} getAlert={r=>r.severity==='Crítica'}/>}

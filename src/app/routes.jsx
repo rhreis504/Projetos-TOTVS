@@ -15,6 +15,9 @@ import SettingsPage from '../pages/SettingsPage';
 import AgfOverviewPage from '../pages/agf/AgfOverviewPage';
 import GateTreePage from '../pages/agf/GateTreePage';
 import GatePage from '../pages/agf/GatePage';
+import Gate3Page from '../pages/agf/Gate3Page';
+import ProjectDetailPage from '../pages/ProjectDetailPage';
+import ProjectAgfJourneyPage from '../pages/agf/ProjectAgfJourneyPage';
 import EmptyState from '../components/ui/EmptyState';
 import { getPageTitle } from '../utils/routeHelpers';
 import { navigateTo } from '../utils/navigation';
@@ -41,7 +44,16 @@ export function AppRoutes({ profile, onLoginSuccess, onLogout }) {
 
   const title = useMemo(() => getPageTitle(path), [path]);
   if (!profile || path === '/login') return <LoginPage onLoginSuccess={onLoginSuccess} />;
+  const projectGate3Match = path.match(/^\/projetos\/([^/]+)\/agf\/gate\/3$/);
+  const projectAgfMatch = path.match(/^\/projetos\/([^/]+)\/agf$/);
+  const projectMatch = path.match(/^\/projetos\/([^/]+)$/);
   const gateMatch = path.match(/^\/agf\/gate\/(\d)$/);
-  const Page = gateMatch ? GatePage : pages[path];
-  return <AppLayout title={title} profile={profile} onLogout={onLogout}>{Page ? <Page gateId={gateMatch?.[1]} /> : <EmptyState />}</AppLayout>;
+
+  let content;
+  if (projectGate3Match) content = <Gate3Page projectId={projectGate3Match[1]} />;
+  else if (projectAgfMatch) content = <ProjectAgfJourneyPage projectId={projectAgfMatch[1]} />;
+  else if (projectMatch) content = <ProjectDetailPage projectId={projectMatch[1]} />;
+  else if (gateMatch?.[1] === '3') content = <Gate3Page />;
+  else { const Page = gateMatch ? GatePage : pages[path]; content = Page ? <Page gateId={gateMatch?.[1]} /> : <EmptyState />; }
+  return <AppLayout title={title} profile={profile} onLogout={onLogout}>{content}</AppLayout>;
 }

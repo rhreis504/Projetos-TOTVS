@@ -1,0 +1,2 @@
+import Gate3Table from './Gate3Table';
+export default function Gate3DecisionsPanel({ items }){return <Gate3Table rows={items} columns={[{key:'code',label:'Código'},{key:'decisionRequired',label:'Decisão necessária'},{key:'decisionOwner',label:'Responsável decisão'},{key:'deadline',label:'Prazo'},{key:'impactIfNotDecided',label:'Impacto se não decidir'},{key:'status',label:'Status',badge:true},{key:'decisionDate',label:'Data decisão'},{key:'comment',label:'Comentário'}]} getAlert={r=>r.status==='Vencida'}/>}
