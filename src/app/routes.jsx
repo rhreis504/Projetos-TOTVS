@@ -22,6 +22,7 @@ import EmptyState from '../components/ui/EmptyState';
 import { getPageTitle } from '../utils/routeHelpers';
 import { navigateTo } from '../utils/navigation';
 import { getCurrentAppPath, getRedirectedAppPath } from '../utils/basePath';
+import { getActiveProjectId, setActiveProject } from '../utils/projectContext';
 
 const pages = {
   '/home': HomePage, '/portfolio': PortfolioPage, '/cockpit': CockpitPage, '/status-report': StatusReportPage,
@@ -42,13 +43,28 @@ export function AppRoutes({ profile, onLoginSuccess, onLogout }) {
     if (profile && path === '/login') return navigateTo('/home', { replace: true });
   }, [path, profile]);
 
-  const title = useMemo(() => getPageTitle(path), [path]);
-  if (!profile || path === '/login') return <LoginPage onLoginSuccess={onLoginSuccess} />;
   const projectGate3Match = path.match(/^\/projetos\/([^/]+)\/agf\/gate\/3$/);
   const projectAgfMatch = path.match(/^\/projetos\/([^/]+)\/agf$/);
   const projectMatch = path.match(/^\/projetos\/([^/]+)$/);
   const gateMatch = path.match(/^\/agf\/gate\/(\d)$/);
+  const routeProjectId = projectGate3Match?.[1] || projectAgfMatch?.[1] || projectMatch?.[1];
 
+  useEffect(() => {
+    if (routeProjectId) setActiveProject(routeProjectId);
+  }, [routeProjectId]);
+
+  useEffect(() => {
+    if (!profile) return;
+    if (path === '/agf' || path === '/agf/gate/3') {
+      const activeProjectId = getActiveProjectId();
+      if (!activeProjectId) return;
+      const nextPath = path === '/agf' ? `/projetos/${activeProjectId}/agf` : `/projetos/${activeProjectId}/agf/gate/3`;
+      navigateTo(nextPath, { replace: true });
+    }
+  }, [path, profile]);
+
+  const title = useMemo(() => getPageTitle(path), [path]);
+  if (!profile || path === '/login') return <LoginPage onLoginSuccess={onLoginSuccess} />;
   let content;
   if (projectGate3Match) content = <Gate3Page projectId={projectGate3Match[1]} />;
   else if (projectAgfMatch) content = <ProjectAgfJourneyPage projectId={projectAgfMatch[1]} />;
