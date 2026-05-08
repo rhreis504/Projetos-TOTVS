@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Adaptive One - Redirecionando</title>
+  </head>
+  <body>
+    <script>
+      (function () {
+        var segments = window.location.pathname.split('/').filter(Boolean);
+        var project = segments[0] || '';
+        var base = project ? '/' + project + '/' : '/';
+        var baseWithoutSlash = project ? '/' + project : '/';
+        var appPath = window.location.pathname === baseWithoutSlash
+          ? '/'
+          : window.location.pathname.indexOf(base) === 0
+            ? '/' + window.location.pathname.slice(base.length)
+            : window.location.pathname;
+        var redirectTarget = appPath + window.location.search + window.location.hash;
+        window.location.replace(base + '?redirect=' + encodeURIComponent(redirectTarget));
+      })();
+    </script>
+  </body>
+</html>
