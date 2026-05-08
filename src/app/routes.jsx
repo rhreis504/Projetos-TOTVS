@@ -18,6 +18,7 @@ import GatePage from '../pages/agf/GatePage';
 import EmptyState from '../components/ui/EmptyState';
 import { getPageTitle } from '../utils/routeHelpers';
 import { navigateTo } from '../utils/navigation';
+import { getCurrentAppPath, getRedirectedAppPath } from '../utils/basePath';
 
 const pages = {
   '/home': HomePage, '/portfolio': PortfolioPage, '/cockpit': CockpitPage, '/status-report': StatusReportPage,
@@ -28,12 +29,14 @@ const pages = {
 
 
 export function AppRoutes({ profile, onLoginSuccess, onLogout }) {
-  const [path, setPath] = useState(window.location.pathname);
-  useEffect(() => { const sync = () => setPath(window.location.pathname); window.addEventListener('popstate', sync); return () => window.removeEventListener('popstate', sync); }, []);
+  const [path, setPath] = useState(getCurrentAppPath);
+  useEffect(() => { const sync = () => setPath(getCurrentAppPath()); window.addEventListener('popstate', sync); return () => window.removeEventListener('popstate', sync); }, []);
   useEffect(() => {
-    if (path === '/') navigateTo(profile ? '/home' : '/login');
-    if (!profile && path !== '/login') navigateTo('/login');
-    if (profile && path === '/login') navigateTo('/home');
+    const redirectedPath = getRedirectedAppPath();
+    if (redirectedPath && profile) return navigateTo(redirectedPath, { replace: true });
+    if (path === '/') return navigateTo(profile ? '/home' : '/login', { replace: true });
+    if (!profile && path !== '/login') return navigateTo('/login', { replace: true });
+    if (profile && path === '/login') return navigateTo('/home', { replace: true });
   }, [path, profile]);
 
   const title = useMemo(() => getPageTitle(path), [path]);
