@@ -1,0 +1,1 @@
+export default function PageTitle({ title, subtitle }) { return <div className="mb-6"><h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">{title}</h1>{subtitle && <p className="mt-2 text-sm text-slate-600 leading-relaxed max-w-3xl">{subtitle}</p>}</div>; }

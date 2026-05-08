@@ -1,0 +1,1 @@
+export default function EmptyState({ title='Página não encontrada', description='A rota solicitada não está disponível.' }) { return <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 text-center"><h1 className="text-xl font-bold text-slate-900">{title}</h1><p className="mt-2 text-sm text-slate-600">{description}</p></section>; }
