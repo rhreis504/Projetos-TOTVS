@@ -11,4 +11,8 @@ export function getPageTitle(path) {
   if (/^\/agf\/gate\/\d$/.test(path)) return `Gate ${path.split('/').pop()}`;
   return routeTitles[path] || 'Página não encontrada';
 }
-export function isActivePath(current, itemPath) { return current === itemPath || (itemPath !== '/home' && current.startsWith(`${itemPath}/`)); }
+export function isActivePath(current, itemPath) {
+  if (itemPath === '/agf' && /^\/projetos\/[^/]+\/agf/.test(current)) return true;
+  if (itemPath === '/portfolio' && /^\/projetos\/[^/]+$/.test(current)) return true;
+  return current === itemPath || (itemPath !== '/home' && current.startsWith(`${itemPath}/`));
+}
