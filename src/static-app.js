@@ -17,6 +17,49 @@ const projects = [
   { id: 'PRJ-002', code: 'AURORA-ERP-2026', name: 'Implantação ERP Protheus', clientName: 'Grupo Aurora', status: 'Em planejamento', progress: '14%', color: 'green', currentGate: '1', agfLevel: 'Medium', description: 'Implantação de ERP com foco financeiro, fiscal e suprimentos.' },
   { id: 'PRJ-003', code: 'HORIZONTE-RH-2026', name: 'Rollout RH', clientName: 'Rede Horizonte', status: 'Crítico', progress: '72%', color: 'red', currentGate: '4', agfLevel: 'Simple', description: 'Rollout de RH e folha para novas unidades.' },
 ];
+
+const STATIC_TAP_STORAGE_KEY = 'adaptiveOne.tap.entries';
+const STATIC_PORTFOLIO_CACHE_KEY = 'adaptiveOne.portfolio.projects';
+function readJson(key, fallback = []) { try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); } catch { return fallback; } }
+function writeJson(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
+function allPortfolioProjects() {
+  const byId = new Map();
+  [...projects, ...readJson(STATIC_PORTFOLIO_CACHE_KEY)].forEach(project => { if (project?.id) byId.set(project.id, { ...(byId.get(project.id) || {}), ...project }); });
+  return [...byId.values()];
+}
+function resolveStaticSupabase() {
+  const cfg = readSupabaseConfig()?.supabase || {};
+  const raw = cfg.url || cfg.apiUrl || cfg.projectRef || '';
+  const dashboard = String(raw).match(/app\.supabase\.com\/project\/([a-z0-9-]+)/i)?.[1];
+  const ref = cfg.projectRef || dashboard || String(raw).match(/https?:\/\/([a-z0-9-]+)\.supabase\.co/i)?.[1];
+  let url = cfg.url || (ref ? `https://${ref}.supabase.co` : '');
+  if (/app\.supabase\.com\/project\//i.test(url) && dashboard) url = `https://${dashboard}.supabase.co`;
+  const key = cfg.secret || cfg.serviceRole || cfg.service_role || cfg.publishableKey || cfg.anonKey || '';
+  return { url: String(url || '').replace(/\/$/, ''), key, projectsTable: cfg.projectsTable || 'projects', tapTable: cfg.tapTable || 'tap_entries' };
+}
+async function staticSupabaseRequest(path, options = {}) {
+  const settings = resolveStaticSupabase();
+  if (!settings.url || !settings.key) throw new Error('Supabase não configurado. Configure URL/ref e chave nas Configurações.');
+  const response = await fetch(`${settings.url}/rest/v1/${path}`, { method: options.method || 'GET', headers: { apikey: settings.key, Authorization: `Bearer ${settings.key}`, 'Content-Type': 'application/json', Accept: 'application/json', ...(options.prefer ? { Prefer: options.prefer } : {}) }, body: options.body ? JSON.stringify(options.body) : undefined });
+  const text = await response.text();
+  const payload = text ? JSON.parse(text) : null;
+  if (!response.ok) throw new Error(payload?.message || text || `HTTP ${response.status}`);
+  return payload;
+}
+async function persistStaticTap(tap) {
+  const settings = resolveStaticSupabase();
+  const code = tap.projectId || tap.nomeProjeto.replace(/\s+/g, '-').toUpperCase();
+  const found = await staticSupabaseRequest(`${settings.projectsTable}?code=eq.${encodeURIComponent(code)}&select=id,code,name&limit=1`);
+  const project = found?.[0] || (await staticSupabaseRequest(settings.projectsTable, { method: 'POST', body: [{ code, name: tap.nomeProjeto }], prefer: 'return=representation,resolution=merge-duplicates' }))?.[0];
+  const result = await staticSupabaseRequest(settings.tapTable, { method: 'POST', body: [{ project_id: project.id, payload: tap }], prefer: 'return=representation,resolution=merge-duplicates' });
+  return { ...tap, id: result?.[0]?.id || tap.id, _dbId: result?.[0]?.id || tap.id, projectId: code };
+}
+function cacheStaticTapProject(tap) {
+  const cache = readJson(STATIC_PORTFOLIO_CACHE_KEY);
+  const project = { id: tap.projectId || tap.id, code: tap.projectId || tap.id, name: tap.nomeProjeto, clientName: tap.codCliente || 'Cliente não informado', status: tap.projetoEmPerda === 'Sim' ? 'Em atenção' : 'Em planejamento', progress: '0%', color: tap.criticidadeCliente === 'ALTA' ? 'amber' : 'green', currentGate: '1', agfLevel: tap.criticidadeCliente === 'ALTA' ? 'Hard' : 'Simple', description: tap.observacao || 'Projeto criado a partir de TAP.', origin: 'TAP' };
+  writeJson(STATIC_PORTFOLIO_CACHE_KEY, [project, ...cache.filter(item => item.id !== project.id)]);
+}
+
 const gates = [
   ['1', 'Gate 1 · Descoberta', 'Entendimento inicial, objetivos e restrições do projeto.', 'Concluído', 'green'],
   ['2', 'Gate 2 · Planejamento', 'Plano integrado, cronograma, capacidade e critérios de aceite.', 'Em andamento', 'amber'],
@@ -133,7 +176,7 @@ function homePage() {
 }
 function kpi(title, number, subtitle) { return `<article class="card"><h3>${esc(title)}</h3><div class="kpi">${esc(number)}</div><p class="muted">${esc(subtitle)}</p></article>`; }
 function portfolioPage() {
-  return `<section class="hero"><h1>Portfólio de Projetos</h1><p>Selecione um projeto pelo link de ação para abrir o fluxo da Jornada AGF.</p></section><section class="grid"><article class="card full table-wrap"><table><thead><tr><th>Projeto</th><th>Cliente</th><th>Status</th><th>Progresso</th><th>Saúde</th><th>Ações</th></tr></thead><tbody>${projects.map(project => `<tr><td><strong>${esc(project.name)}</strong><br><span class="muted">${esc(project.code)}</span></td><td>${esc(project.clientName)}</td><td>${esc(project.status)}</td><td>${esc(project.progress)}</td><td>${badge(healthLabel(project.color), project.color)}</td><td class="actions-cell"><a class="action-link" href="${href(`/projetos/${project.id}/agf`)}" data-route="/projetos/${project.id}/agf">Abrir projeto →</a><a class="secondary-link" href="${href(`/projetos/${project.id}`)}" data-route="/projetos/${project.id}">Detalhes</a></td></tr>`).join('')}</tbody></table></article></section>`;
+  return `<section class="hero"><h1>Portfólio de Projetos</h1><p>Selecione um projeto pelo link de ação para abrir o fluxo da Jornada AGF.</p></section><section class="grid"><article class="card full table-wrap"><table><thead><tr><th>Projeto</th><th>Cliente</th><th>Status</th><th>Progresso</th><th>Saúde</th><th>Ações</th></tr></thead><tbody>${allPortfolioProjects().map(project => `<tr><td><strong>${esc(project.name)}</strong><br><span class="muted">${esc(project.code)}</span></td><td>${esc(project.clientName)}</td><td>${esc(project.status)}</td><td>${esc(project.progress)}</td><td>${badge(healthLabel(project.color), project.color)}</td><td class="actions-cell"><a class="action-link" href="${href(`/projetos/${project.id}/agf`)}" data-route="/projetos/${project.id}/agf">Abrir projeto →</a><a class="secondary-link" href="${href(`/projetos/${project.id}`)}" data-route="/projetos/${project.id}">Detalhes</a></td></tr>`).join('')}</tbody></table></article></section>`;
 }
 function projectDetailPage(projectId) {
   const project = findProject(projectId);
@@ -180,14 +223,12 @@ function gatePage(id, projectId) {
 }
 
 function tapPage() {
-  return `<section class="hero"><h1>TAP · Termo de Abertura do Projeto</h1><p>Formalize a abertura, objetivos, escopo inicial, governança, premissas e critérios de sucesso antes de avançar na Jornada AGF.</p></section>
+  const taps = readJson(STATIC_TAP_STORAGE_KEY);
+  return `<section class="hero"><h1>TAP · Termo de Abertura do Projeto</h1><p>Cadastre, consulte e mantenha Termos de Abertura do Projeto com persistência no Supabase e reflexo automático no portfólio.</p></section>
   <section class="grid">
-    <article class="card wide"><h3>Identificação do projeto</h3><ul class="list"><li><span>Projeto</span><strong>Implantação RH Rossi</strong></li><li><span>Cliente</span><strong>Rossi Supermercados</strong></li><li><span>Patrocinador</span><strong>Diretoria de RH</strong></li><li><span>Gerente do projeto</span><strong>PMO TOTVS</strong></li></ul></article>
-    <article class="card"><h3>Status do TAP</h3><div class="kpi">Em validação</div>${badge('Pronto para assinatura', 'amber')}</article>
-    <article class="card"><h3>Objetivos</h3><p class="muted">Alinhar expectativas, responsabilidades, macroescopo e critérios executivos para iniciar o projeto com governança.</p></article>
-    <article class="card"><h3>Escopo inicial</h3><p class="muted">RH, folha, ponto, admissão digital, ATS, LMS/LXP, Feedz, Quirons e Ahgora.</p></article>
-    <article class="card"><h3>Premissas</h3><p class="muted">Disponibilidade de key users, ambientes preparados, dados saneados e calendário de comitês confirmado.</p></article>
-    <article class="card full"><h3>Checklist de abertura</h3><ul class="list"><li><span>Business case e objetivos aprovados</span>${badge('OK')}</li><li><span>Governança e papéis definidos</span>${badge('OK')}</li><li><span>Riscos iniciais registrados</span>${badge('Atenção', 'amber')}</li><li><span>Critérios de aceite do TAP</span>${badge('Em validação', 'amber')}</li></ul><a class="action-link" href="${href('/agf')}" data-route="/agf">Continuar para Jornada AGF →</a></article>
+    <article class="card full"><div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap"><div><h3>Dashboard de TAPs cadastradas</h3><p class="muted">${taps.length} TAP(s) cadastrada(s). Clique em salvar para gravar no Supabase e inserir o projeto no portfólio.</p></div>${badge(`${taps.length} filtradas`, 'green')}</div></article>
+    <article class="card full"><h3>Nova TAP</h3><form id="static-tap-form" class="settings-form"><label>Nome do Projeto<input id="tap-nome" required placeholder="Nome do projeto"></label><label>Cód. Cliente<input id="tap-cliente" placeholder="Separe múltiplos códigos por vírgula"></label><label>GPP<input id="tap-gpp" placeholder="GPP responsável"></label><label>Coordenador<input id="tap-coordenador" placeholder="Coordenador do projeto"></label><label>Criticidade Cliente<select id="tap-criticidade"><option>BAIXA</option><option>MÉDIA</option><option>ALTA</option></select></label><label>Projeto em perda<select id="tap-perda"><option>Não</option><option>Sim</option></select></label><label>Valor Projeto<input id="tap-valor" placeholder="R$ 0,00"></label><label>Go-live previsto<input id="tap-golive" type="date"></label><label class="full">Produtos do escopo<input id="tap-produtos" placeholder="Separe produtos por vírgula"></label><label class="full">Observações<textarea id="tap-observacao" rows="4"></textarea></label><button class="primary-btn" type="submit">Salvar TAP no Supabase</button><pre id="tap-log" class="settings-log"></pre></form></article>
+    ${taps.length ? `<article class="card full"><h3>TAPs cadastradas</h3><ul class="list">${taps.map(tap => `<li><span><strong>${esc(tap.nomeProjeto)}</strong><br><small>${esc((tap.codCliente || []).join(', ') || 'Cliente não informado')} · ${esc(tap.gpp || 'GPP não informado')}</small></span>${badge(tap.criticidadeCliente || 'BAIXA', tap.criticidadeCliente === 'ALTA' ? 'red' : tap.criticidadeCliente === 'MÉDIA' ? 'amber' : 'green')}</li>`).join('')}</ul></article>` : `<article class="card full"><h3>Nenhuma TAP cadastrada</h3><p class="muted">Preencha o formulário para criar a primeira TAP.</p></article>`}
   </section>`;
 }
 
@@ -329,6 +370,34 @@ function bindEvents() {
   document.querySelector('[data-toggle-menu]')?.addEventListener('click', () => { sidebarOpen = !sidebarOpen; render(); });
   document.querySelector('[data-save-supabase]')?.addEventListener('click', saveSupabaseConfig);
   document.querySelector('[data-test-supabase]')?.addEventListener('click', testSupabaseConfig);
+
+  document.getElementById('static-tap-form')?.addEventListener('submit', async event => {
+    event.preventDefault();
+    const log = document.getElementById('tap-log');
+    const tap = {
+      id: `tap-${Date.now()}`,
+      dataTap: new Date().toISOString().slice(0, 10),
+      nomeProjeto: document.getElementById('tap-nome').value.trim(),
+      codCliente: document.getElementById('tap-cliente').value.split(',').map(item => item.trim()).filter(Boolean),
+      gpp: document.getElementById('tap-gpp').value.trim(),
+      coordenador: document.getElementById('tap-coordenador').value.trim(),
+      criticidadeCliente: document.getElementById('tap-criticidade').value,
+      projetoEmPerda: document.getElementById('tap-perda').value,
+      valorProjeto: document.getElementById('tap-valor').value.trim(),
+      goLive: document.getElementById('tap-golive').value,
+      produtos: document.getElementById('tap-produtos').value.split(',').map(item => item.trim()).filter(Boolean),
+      observacao: document.getElementById('tap-observacao').value.trim(),
+    };
+    try {
+      const saved = await persistStaticTap(tap);
+      writeJson(STATIC_TAP_STORAGE_KEY, [saved, ...readJson(STATIC_TAP_STORAGE_KEY)]);
+      cacheStaticTapProject(saved);
+      log.textContent = 'TAP salva no Supabase e adicionada ao portfólio.';
+      render();
+    } catch (error) {
+      log.textContent = `Falha ao salvar TAP: ${error.message}`;
+    }
+  });
   document.getElementById('login-form')?.addEventListener('submit', event => {
     event.preventDefault();
     const error = document.getElementById('login-error');

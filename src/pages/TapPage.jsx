@@ -17,10 +17,19 @@ import {
 import EmptyState from '../components/ui/EmptyState';
 import PageTitle from '../components/ui/PageTitle';
 import { getActiveProject } from '../utils/projectContext';
+import {
+  deleteTapEntry,
+  getProjectCode,
+  getProjectName,
+  loadTapEntries,
+  readCockpitConfig,
+  resolveSupabaseSettings,
+  saveTapEntry,
+} from '../services/tapSupabaseService';
 
 const TAP_STORAGE_KEY = 'adaptiveOne.tap.entries';
 const TAP_OPTIONS_KEY = 'adaptiveOne.tap.quickOptions';
-const SUPABASE_TABLE = 'tap_entries';
+const PORTFOLIO_CACHE_KEY = 'adaptiveOne.portfolio.projects';
 
 const baseProducts = [
   'TOTVS RM - Folha de Pagamento',
@@ -124,22 +133,48 @@ function safeParse(value, fallback) {
   }
 }
 
-function getSupabaseClient() {
-  return window?.supabaseClient || window?.supabase || window?.parent?.supabaseClient || window?.parent?.supabase || null;
+function getCurrentProjectCode(fallbackProjectId = '') {
+  return getProjectCode(readCockpitConfig(), fallbackProjectId);
 }
 
-function getActiveProjectId() {
-  return window?.activeProjectId || window?.projectId || window?.parent?.activeProjectId || window?.parent?.projectId || getActiveProject()?.id || null;
+function hasSupabaseConfiguration() {
+  const settings = resolveSupabaseSettings(readCockpitConfig());
+  return Boolean(settings.url && settings.key);
 }
 
-async function readTapEntries() {
-  const supabase = getSupabaseClient();
-  if (supabase?.from) {
-    const { data, error } = await supabase.from(SUPABASE_TABLE).select('*').order('updated_at', { ascending: false });
-    if (error) throw error;
-    return (data || []).map((entry) => ({ ...(entry.payload || {}), id: entry.id || entry.payload?.id, projectId: entry.project_id || entry.payload?.projectId }));
-  }
-  return safeParse(localStorage.getItem(TAP_STORAGE_KEY), []);
+async function readTapEntries(projectCode) {
+  return loadTapEntries({ projectCode });
+}
+
+function mirrorTapProjectToPortfolio(tap) {
+  const cache = safeParse(localStorage.getItem(PORTFOLIO_CACHE_KEY), []);
+  const projectCode = tap.projectId || tap.nomeProjeto || tap.id;
+  const project = {
+    id: projectCode,
+    code: projectCode,
+    name: tap.nomeProjeto || projectCode,
+    clientId: (tap.codCliente || [])[0] || '',
+    clientName: (tap.codCliente || []).join(', ') || 'Cliente não informado',
+    client: (tap.codCliente || []).join(', ') || 'Cliente não informado',
+    description: tap.observacao || tap.premissas || 'Projeto criado a partir de TAP.',
+    projectManager: tap.coordenador || tap.gerenteProjeto || 'Não informado',
+    programManager: tap.gerentePrograma || tap.gpp || 'Não informado',
+    sponsor: tap.sponsorCliente || tap.sponsorTotvs || 'Não informado',
+    status: tap.projetoEmPerda === 'Sim' ? 'Em atenção' : 'Em planejamento',
+    agfLevel: tap.criticidadeCliente === 'ALTA' ? 'Hard' : tap.criticidadeCliente === 'MÉDIA' ? 'Medium' : 'Simple',
+    currentGate: 1,
+    gate: 'Gate 1',
+    healthStatus: tap.projetoEmPerda === 'Sim' || tap.criticidadeCliente === 'ALTA' ? 'Atenção' : 'Saudável',
+    health: tap.projetoEmPerda === 'Sim' || tap.criticidadeCliente === 'ALTA' ? 'Atenção' : 'Saudável',
+    origin: 'TAP',
+    startDate: tap.dataInicio || tap.dataTap || '',
+    plannedGoLive: tap.goLive || 'A definir',
+    goLive: tap.goLive || 'A definir',
+    progress: 0,
+    lastUpdate: new Date().toISOString().slice(0, 10),
+  };
+  const next = [project, ...cache.filter((item) => item.id !== project.id && item.code !== project.code)];
+  localStorage.setItem(PORTFOLIO_CACHE_KEY, JSON.stringify(next));
 }
 
 async function persistTapEntries(entries) {
@@ -179,7 +214,7 @@ function createTapId() {
 function getCriticalityClasses(value) {
   const key = String(value || '').toUpperCase();
   if (key === 'ALTA') return 'bg-red-50 text-red-700 border-red-200';
-  if (key === 'MÉDIA' || key === 'MEDIA') return 'bg-amber-50 text-amber-700 border-amber-200';
+  if (key === 'MÉDIA' || key === 'MEDIA') return 'bg-teal-50 text-teal-700 border-teal-200';
   return 'bg-emerald-50 text-emerald-700 border-emerald-200';
 }
 
@@ -242,6 +277,12 @@ function QuickInput({ field, value, onChange, options, addOption, placeholder })
 function TapModal({ draft, setDraft, onClose, onSave, onDelete, quickOptions, addOption, productCatalog, addProductToCatalog }) {
   const [productSearch, setProductSearch] = useState('');
   const [customProduct, setCustomProduct] = useState('');
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, []);
 
   function update(field, value) {
     setDraft((current) => ({ ...current, [field]: value }));
@@ -431,7 +472,7 @@ function TapModal({ draft, setDraft, onClose, onSave, onDelete, quickOptions, ad
 
           <div className="sticky bottom-0 -mx-6 -mb-6 flex flex-col-reverse gap-3 border-t border-slate-200 bg-white/95 p-6 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
             <div>{draft.id ? <button type="button" onClick={onDelete} className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500"><Trash2 className="h-4 w-4" />Excluir TAP</button> : null}</div>
-            <div className="flex flex-col gap-3 sm:flex-row"><button type="button" onClick={onClose} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">Cancelar</button><button type="submit" className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">Salvar TAP</button></div>
+            <div className="flex flex-col gap-3 sm:flex-row"><button type="button" onClick={onClose} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">Cancelar</button><button type="submit" className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">{draft.id ? 'Atualizar TAP' : 'Salvar TAP'}</button></div>
           </div>
         </form>
       </div>
@@ -452,26 +493,29 @@ export default function TapPage() {
   const [productCatalog, setProductCatalog] = useState(() => [...new Set([...baseProducts, ...safeParse(localStorage.getItem(`${TAP_OPTIONS_KEY}.products`), [])])]);
 
   const activeProject = getActiveProject();
-  const activeProjectId = getActiveProjectId();
-  const hasSupabase = Boolean(getSupabaseClient()?.from);
+  const activeProjectId = getCurrentProjectCode(activeProject?.id);
+  const cockpitConfig = readCockpitConfig();
+  const projectName = activeProject?.name || getProjectName(cockpitConfig, activeProjectId);
+  const hasSupabase = hasSupabaseConfiguration();
 
   async function loadTaps() {
     setIsLoading(true);
     setLastError('');
     try {
-      const entries = await readTapEntries();
+      const entries = await readTapEntries(activeProjectId);
       setTaps(entries);
+      await persistTapEntries(entries);
     } catch (error) {
       console.error('Erro ao carregar TAPs.', error);
       setLastError(error?.message || String(error));
-      setToast({ type: 'error', message: 'Não foi possível carregar as TAPs. Usando base local quando disponível.', detail: error?.message || String(error) });
+      setToast({ type: 'error', message: 'Não foi possível carregar as TAPs do Supabase. Consulte os detalhes técnicos.', detail: error?.message || String(error) });
       setTaps(safeParse(localStorage.getItem(TAP_STORAGE_KEY), []));
     } finally {
       setIsLoading(false);
     }
   }
 
-  useEffect(() => { loadTaps(); }, []);
+  useEffect(() => { loadTaps(); }, [activeProjectId]);
 
   const filteredTaps = useMemo(() => taps.filter((tap) => {
     const matchCliente = !filters.cliente || (tap.codCliente || []).some((client) => client.toLowerCase().includes(filters.cliente.toLowerCase()));
@@ -529,25 +573,15 @@ export default function TapPage() {
       return;
     }
     const now = new Date().toISOString();
-    const saved = { ...draft, id: draft.id || createTapId(), projectId: draft.projectId || activeProjectId || null, updatedAt: now, createdAt: draft.createdAt || now };
-    const nextEntries = taps.some((tap) => tap.id === saved.id) ? taps.map((tap) => tap.id === saved.id ? saved : tap) : [saved, ...taps];
+    const saved = { ...draft, projectId: draft.projectId || activeProjectId || null, updatedAt: now, createdAt: draft.createdAt || now };
     try {
-      let integrationWarning = '';
-      const supabase = getSupabaseClient();
-      if (supabase?.from) {
-        try {
-          const { error } = await supabase.from(SUPABASE_TABLE).upsert({ id: saved.id, project_id: saved.projectId, payload: saved, updated_at: now });
-          if (error) throw error;
-        } catch (error) {
-          console.error('Erro ao salvar TAP no Supabase. Aplicando fallback localStorage.', error);
-          integrationWarning = error?.message || String(error);
-          setLastError(integrationWarning);
-        }
-      }
-      await persistTapEntries(nextEntries);
-      setTaps(nextEntries);
+      const persisted = await saveTapEntry(saved, { projectCode: activeProjectId, projectName: projectName || draft.nomeProjeto });
+      const freshEntries = await readTapEntries(activeProjectId);
+      await persistTapEntries(freshEntries);
+      mirrorTapProjectToPortfolio(persisted);
+      setTaps(freshEntries);
       setIsModalOpen(false);
-      setToast({ type: integrationWarning ? 'error' : 'success', message: integrationWarning ? 'TAP salva localmente. A sincronização com Supabase falhou.' : 'TAP salva com sucesso.', detail: integrationWarning });
+      setToast({ type: 'success', message: draft._dbId ? 'TAP atualizada com sucesso no Supabase.' : 'TAP criada com sucesso no Supabase.' });
     } catch (error) {
       console.error('Erro ao salvar TAP.', error);
       setLastError(error?.message || String(error));
@@ -557,24 +591,13 @@ export default function TapPage() {
 
   async function deleteTap() {
     if (!draft.id) return;
-    const nextEntries = taps.filter((tap) => tap.id !== draft.id);
     try {
-      let integrationWarning = '';
-      const supabase = getSupabaseClient();
-      if (supabase?.from) {
-        try {
-          const { error } = await supabase.from(SUPABASE_TABLE).delete().eq('id', draft.id);
-          if (error) throw error;
-        } catch (error) {
-          console.error('Erro ao excluir TAP no Supabase. Aplicando fallback localStorage.', error);
-          integrationWarning = error?.message || String(error);
-          setLastError(integrationWarning);
-        }
-      }
-      await persistTapEntries(nextEntries);
-      setTaps(nextEntries);
+      await deleteTapEntry(draft);
+      const freshEntries = await readTapEntries(activeProjectId);
+      await persistTapEntries(freshEntries);
+      setTaps(freshEntries);
       setIsModalOpen(false);
-      setToast({ type: integrationWarning ? 'error' : 'success', message: integrationWarning ? 'TAP excluída localmente. A sincronização com Supabase falhou.' : 'TAP excluída com sucesso.', detail: integrationWarning });
+      setToast({ type: 'success', message: 'TAP excluída com sucesso no Supabase.' });
     } catch (error) {
       console.error('Erro ao excluir TAP.', error);
       setLastError(error?.message || String(error));
@@ -582,7 +605,13 @@ export default function TapPage() {
     }
   }
 
-  const activeFilterLabels = Object.entries(filters).filter(([, value]) => value).map(([key, value]) => `${{ cliente: 'Cliente', gpp: 'GPP', criticidadeCliente: 'Criticidade Cliente', criticidadeTotvs: 'Criticidade TOTVS', projetoEmPerda: 'Projeto em perda', nomeProjeto: 'Projeto', produto: 'Produto' }[key]}: ${value}`);
+  const activeFilterLabels = Object.entries(filters)
+    .filter(([, value]) => value)
+    .map(([key, value]) => ({
+      key,
+      value,
+      label: `${{ cliente: 'Cliente', gpp: 'GPP', criticidadeCliente: 'Criticidade Cliente', criticidadeTotvs: 'Criticidade TOTVS', projetoEmPerda: 'Projeto em perda', nomeProjeto: 'Projeto', produto: 'Produto' }[key]}: ${value}`,
+    }));
 
   return (
     <>
@@ -596,8 +625,8 @@ export default function TapPage() {
       </div>
 
       <div className="mb-6 rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-700">
-        {activeProject ? <span>Projeto ativo identificado: <strong>{activeProject.name}</strong>. Novas TAPs serão vinculadas ao projeto.</span> : <span>Nenhum projeto ativo identificado. A TAP será salva sem vínculo de projeto.</span>}
-        <span className="ml-2 font-semibold">Persistência: {hasSupabase ? 'Supabase detectado com fallback local.' : 'localStorage com preparação para Supabase.'}</span>
+        {activeProject ? <span>Projeto ativo identificado: <strong>{activeProject.name}</strong>. Novas TAPs serão vinculadas ao projeto.</span> : <span>Nenhum projeto ativo identificado. A TAP usará o contexto configurado no Cockpit/Supabase.</span>}
+        <span className="ml-2 font-semibold">Persistência: {hasSupabase ? 'Supabase REST configurado.' : 'Supabase não configurado.'}</span>
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -623,7 +652,7 @@ export default function TapPage() {
         </div>
       </section> : null}
 
-      {activeFilterLabels.length ? <div className="mb-6 flex flex-wrap gap-2">{activeFilterLabels.map((label) => <span key={label} className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">{label}</span>)}</div> : null}
+      {activeFilterLabels.length ? <div className="mb-6 flex flex-wrap gap-2">{activeFilterLabels.map((filter) => <button type="button" key={filter.key} onClick={() => setFilters((current) => ({ ...current, [filter.key]: '' }))} className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100">{filter.label}<X className="h-3 w-3" /></button>)}<button type="button" onClick={() => setFilters(initialFilters)} className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50">Limpar filtros</button></div> : null}
 
       {lastError ? <div className="mb-6 rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700"><strong>Detalhe técnico do último erro:</strong><pre className="mt-2 whitespace-pre-wrap text-xs">{lastError}</pre></div> : null}
 
