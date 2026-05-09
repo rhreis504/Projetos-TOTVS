@@ -1,9 +1,13 @@
+import { useEffect, useMemo, useState } from 'react';
 import PageTitle from '../components/ui/PageTitle';
 import StatusBadge from '../components/ui/StatusBadge';
 import { mockProjects } from '../data/mockProjects';
 import { navigateTo } from '../utils/navigation';
 import { toBrowserPath } from '../utils/basePath';
 import { setActiveProject } from '../utils/projectContext';
+import { loadPortfolioProjectsFromSupabase, resolveSupabaseSettings } from '../services/tapSupabaseService';
+
+const PORTFOLIO_CACHE_KEY = 'adaptiveOne.portfolio.projects';
 
 const variant = (health) => (health === 'Crítico' || health === 'Bloqueado' ? 'critico' : health === 'Atenção' ? 'atencao' : 'sucesso');
 
@@ -16,15 +20,68 @@ function selectProject(projectId, destination = 'agf') {
   navigateTo(projectPath(projectId, destination));
 }
 
+function safeParse(value, fallback = []) {
+  try {
+    return value ? JSON.parse(value) : fallback;
+  } catch (error) {
+    console.warn('Não foi possível carregar projetos locais criados pela TAP.', error);
+    return fallback;
+  }
+}
+
+function normalizeSupabaseProject(project) {
+  return {
+    id: project.code || project.id,
+    code: project.code || project.id,
+    name: project.name || project.code || 'Projeto sem nome',
+    clientName: 'Cliente informado na TAP',
+    status: 'Em planejamento',
+    currentGate: 1,
+    agfLevel: 'Simple',
+    healthStatus: 'Saudável',
+    plannedGoLive: 'A definir',
+    progress: 0,
+    origin: 'Supabase',
+  };
+}
+
+function mergeProjects(...projectGroups) {
+  const byId = new Map();
+  projectGroups.flat().forEach((project) => {
+    if (!project?.id) return;
+    byId.set(project.id, { ...byId.get(project.id), ...project });
+  });
+  return [...byId.values()];
+}
+
 export default function PortfolioPage() {
+  const [tapProjects, setTapProjects] = useState(() => safeParse(localStorage.getItem(PORTFOLIO_CACHE_KEY)));
+
+  useEffect(() => {
+    const settings = resolveSupabaseSettings();
+    if (!settings.url || !settings.key) return;
+    loadPortfolioProjectsFromSupabase()
+      .then((projects) => {
+        const normalized = (projects || []).map(normalizeSupabaseProject);
+        setTapProjects((current) => {
+          const next = mergeProjects(normalized, current);
+          localStorage.setItem(PORTFOLIO_CACHE_KEY, JSON.stringify(next));
+          return next;
+        });
+      })
+      .catch((error) => console.warn('Não foi possível carregar projetos do Supabase para o portfólio.', error));
+  }, []);
+
+  const projects = useMemo(() => mergeProjects(mockProjects, tapProjects), [tapProjects]);
+
   return (
     <>
       <PageTitle
         title="Portfólio de Projetos"
-        subtitle="Selecione um projeto para definir o contexto de trabalho e acessar a Jornada AGF vinculada."
+        subtitle="Selecione um projeto para definir o contexto de trabalho e acessar a Jornada AGF vinculada. Projetos criados pela TAP aparecem automaticamente nesta lista."
       />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {mockProjects.map((p) => (
+        {projects.map((p) => (
           <article
             key={p.id}
             className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md"
@@ -43,6 +100,7 @@ export default function PortfolioPage() {
               <div><dt className="text-slate-500">Nível AGF</dt><dd className="font-medium text-slate-800">{p.agfLevel}</dd></div>
               <div><dt className="text-slate-500">Go Live previsto</dt><dd className="font-medium text-slate-800">{p.plannedGoLive}</dd></div>
               <div><dt className="text-slate-500">Progresso</dt><dd className="font-medium text-slate-800">{p.progress}%</dd></div>
+              {p.origin === 'TAP' || p.origin === 'Supabase' ? <div><dt className="text-slate-500">Origem</dt><dd className="font-medium text-slate-800">{p.origin}</dd></div> : null}
             </dl>
             <div className="mt-6 grid grid-cols-1 gap-3">
               <a

@@ -1,9 +1,27 @@
 import { mockProjects } from '../data/mockProjects';
 
 const ACTIVE_PROJECT_KEY = 'adaptiveOne.activeProjectId';
+const PORTFOLIO_CACHE_KEY = 'adaptiveOne.portfolio.projects';
+
+function safeParseProjects() {
+  try {
+    return JSON.parse(localStorage.getItem(PORTFOLIO_CACHE_KEY) || '[]');
+  } catch (error) {
+    console.warn('Não foi possível ler projetos criados pela TAP.', error);
+    return [];
+  }
+}
+
+export function getAllProjects() {
+  const byId = new Map();
+  [...mockProjects, ...safeParseProjects()].forEach((project) => {
+    if (project?.id) byId.set(project.id, { ...byId.get(project.id), ...project });
+  });
+  return [...byId.values()];
+}
 
 export function getProjectById(projectId) {
-  return mockProjects.find((project) => project.id === projectId) || null;
+  return getAllProjects().find((project) => project.id === projectId || project.code === projectId) || null;
 }
 
 export function getActiveProjectId() {
