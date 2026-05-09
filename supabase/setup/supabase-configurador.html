@@ -1,0 +1,109 @@
+<section id="supabase-configuracoes" class="card supabase-configuracoes">
+  <h3>Configurações Supabase</h3>
+  <p>Use este bloco como base para colar/adaptar dentro do menu Configurações do projeto.</p>
+  <div class="supabase-config-grid">
+    <label>Project URL<input id="supabase-url" type="text" placeholder="https://SEU-PROJECT-REF.supabase.co"></label>
+    <label>Project Ref<input id="supabase-project-ref" type="text" placeholder="SEU-PROJECT-REF"></label>
+    <label>Schema REST<input id="supabase-schema" type="text" value="public"></label>
+    <label>Tabela de Projetos<input id="supabase-projects-table" type="text" value="projects"></label>
+    <label>Tabela TAP<input id="supabase-tap-table" type="text" value="tap_entries"></label>
+    <label>Publishable/Anon Key<input id="supabase-publishable-key" type="password" placeholder="eyJ... ou sb_publishable_..."></label>
+    <label>Service Role/Secret Key<input id="supabase-secret-key" type="password" placeholder="sb_secret_... ou service_role"></label>
+    <label>REST API URL<input id="supabase-api-url" type="text" placeholder="https://SEU-PROJECT-REF.supabase.co/rest/v1/"></label>
+  </div>
+  <div class="supabase-actions">
+    <button type="button" onclick="salvarConfiguracaoSupabase()">Salvar Supabase</button>
+    <button type="button" onclick="testarConfiguracaoSupabase()">Testar Conexão</button>
+  </div>
+  <pre id="supabase-config-log" aria-live="polite"></pre>
+</section>
+<script>
+const SUPABASE_STORAGE_KEY = 'totvs_cockpit_config';
+function normalizarSupabaseUrl(rawUrl) {
+  const input = String(rawUrl || '').trim();
+  if (!input) throw new Error('Informe a Project URL do Supabase.');
+  const candidate = /^https?:\/\//i.test(input) ? input : 'https://' + input;
+  const parsed = new URL(candidate);
+  if (parsed.hostname === 'app.supabase.com') throw new Error('Use a Project URL, não app.supabase.com.');
+  return parsed.protocol + '//' + parsed.hostname;
+}
+function supabaseProjectRef(rawUrl) {
+  return normalizarSupabaseUrl(rawUrl).replace(/^https?:\/\//, '').split('.')[0] || '';
+}
+function lerConfigSupabaseSalva() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(SUPABASE_STORAGE_KEY) || '{}');
+    return stored.supabase || {};
+  } catch (_error) {
+    return {};
+  }
+}
+function preencherConfiguracaoSupabase() {
+  const cfg = lerConfigSupabaseSalva();
+  document.getElementById('supabase-url').value = cfg.url || '';
+  document.getElementById('supabase-project-ref').value = cfg.projectRef || '';
+  document.getElementById('supabase-schema').value = cfg.schema || 'public';
+  document.getElementById('supabase-projects-table').value = cfg.projectsTable || 'projects';
+  document.getElementById('supabase-tap-table').value = cfg.tapTable || 'tap_entries';
+  document.getElementById('supabase-publishable-key').value = cfg.publishableKey || cfg.anonKey || '';
+  document.getElementById('supabase-secret-key').value = cfg.secret || cfg.serviceRole || '';
+  document.getElementById('supabase-api-url').value = cfg.apiUrl || '';
+}
+function lerFormularioSupabase() {
+  const url = normalizarSupabaseUrl(document.getElementById('supabase-url').value);
+  const publishableKey = document.getElementById('supabase-publishable-key').value.trim();
+  const secret = document.getElementById('supabase-secret-key').value.trim();
+  return {
+    url,
+    apiUrl: document.getElementById('supabase-api-url').value.trim() || url + '/rest/v1/',
+    projectRef: document.getElementById('supabase-project-ref').value.trim() || supabaseProjectRef(url),
+    schema: document.getElementById('supabase-schema').value.trim() || 'public',
+    projectsTable: document.getElementById('supabase-projects-table').value.trim() || 'projects',
+    tapTable: document.getElementById('supabase-tap-table').value.trim() || 'tap_entries',
+    publishableKey,
+    anonKey: publishableKey,
+    secret,
+    serviceRole: secret,
+    currentKey: '',
+    previousKey: ''
+  };
+}
+function salvarConfiguracaoSupabase() {
+  const log = document.getElementById('supabase-config-log');
+  try {
+    const supabase = lerFormularioSupabase();
+    const stored = JSON.parse(localStorage.getItem(SUPABASE_STORAGE_KEY) || '{}');
+    localStorage.setItem(SUPABASE_STORAGE_KEY, JSON.stringify({ ...stored, supabase }));
+    preencherConfiguracaoSupabase();
+    log.textContent = 'Configuração Supabase salva em ' + SUPABASE_STORAGE_KEY + '. URL: ' + supabase.url;
+  } catch (error) {
+    log.textContent = 'Erro ao salvar: ' + error.message;
+  }
+}
+async function testarConfiguracaoSupabase() {
+  const log = document.getElementById('supabase-config-log');
+  try {
+    const cfg = lerFormularioSupabase();
+    const key = cfg.secret || cfg.serviceRole || cfg.publishableKey || cfg.anonKey;
+    if (!key) throw new Error('Informe uma chave Supabase para testar.');
+    const endpoint = cfg.url + '/rest/v1/' + cfg.projectsTable + '?select=id,code,name&limit=1';
+    const response = await fetch(endpoint, { headers: { apikey: key, Authorization: 'Bearer ' + key } });
+    const text = await response.text();
+    if (!response.ok) throw new Error('HTTP ' + response.status + ': ' + text);
+    salvarConfiguracaoSupabase();
+    log.textContent = 'Conexão OK. Retorno: ' + text;
+  } catch (error) {
+    log.textContent = 'Falha na conexão: ' + error.message;
+  }
+}
+document.addEventListener('DOMContentLoaded', preencherConfiguracaoSupabase);
+</script>
+<style>
+.supabase-configuracoes { padding: 20px; border: 1px solid #dbe4f0; border-radius: 12px; background: #fff; }
+.supabase-config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.supabase-config-grid label { display: flex; flex-direction: column; gap: 6px; font-weight: 700; font-size: 13px; }
+.supabase-config-grid input { padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; }
+.supabase-actions { display: flex; gap: 10px; margin-top: 14px; }
+.supabase-actions button { padding: 10px 14px; border: 0; border-radius: 8px; background: #0b3f78; color: white; font-weight: 700; cursor: pointer; }
+#supabase-config-log { min-height: 90px; margin-top: 14px; padding: 12px; white-space: pre-wrap; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
+</style>

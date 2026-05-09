@@ -196,6 +196,96 @@ function statusReportPage() { return `<section class="hero"><h1>Status Report</h
 function pendingPage() { return `<section class="hero"><h1>Pendências</h1><p>Itens de ação, responsáveis e prazos.</p></section><section class="grid"><article class="card full table-wrap"><table><thead><tr><th>Item</th><th>Responsável</th><th>Prazo</th></tr></thead><tbody>${pending.map(([i,o,d]) => `<tr><td>${esc(i)}</td><td>${esc(o)}</td><td>${esc(d)}</td></tr>`).join('')}</tbody></table></article></section>`; }
 function risksPage() { return `<section class="hero"><h1>Riscos</h1><p>Monitoramento preventivo dos principais riscos do portfólio.</p></section><section class="grid"><article class="card full"><ul class="list">${risks.map(([r,l,c]) => `<li><span>${esc(r)}</span>${badge(l,c)}</li>`).join('')}</ul></article></section>`; }
 function genericPage(title, subtitle) { return `<section class="hero"><h1>${esc(title)}</h1><p>${esc(subtitle)}</p></section><section class="grid">${kpi('Aderência', '88%', 'Meta operacional')}${kpi('Itens abertos', '14', 'Backlog priorizado')}${kpi('Tendência', '↑', 'Evolução positiva')}<article class="card full"><h3>Detalhes</h3><p class="muted">Página disponível e navegável para acompanhamento da governança.</p></article></section>`; }
+
+const SUPABASE_CONFIG_STORAGE_KEY = 'totvs_cockpit_config';
+function normalizeSupabaseUrl(rawUrl) {
+  const input = String(rawUrl || '').trim();
+  if (!input) throw new Error('Informe a Project URL do Supabase.');
+  const candidate = /^https?:\/\//i.test(input) ? input : `https://${input}`;
+  const parsed = new URL(candidate);
+  if (parsed.hostname === 'app.supabase.com') throw new Error('Use a Project URL, não app.supabase.com.');
+  return `${parsed.protocol}//${parsed.hostname}`;
+}
+function readSupabaseConfig() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(SUPABASE_CONFIG_STORAGE_KEY) || '{}');
+    return stored.supabase || {};
+  } catch (_error) {
+    return {};
+  }
+}
+function settingsPage() {
+  const cfg = readSupabaseConfig();
+  return `<section class="hero"><h1>Configurações</h1><p>Preferências, parâmetros e conexão Supabase da aplicação.</p></section>
+  <section class="card full supabase-configuracoes">
+    <h3>Configurações Supabase</h3>
+    <p class="muted">Os dados são salvos no localStorage na chave <code>${SUPABASE_CONFIG_STORAGE_KEY}</code>, dentro do objeto <code>supabase</code>.</p>
+    <div class="supabase-config-grid">
+      <label>Project URL<input id="supabase-url" value="${esc(cfg.url || '')}" placeholder="https://SEU-PROJECT-REF.supabase.co"></label>
+      <label>Project Ref<input id="supabase-project-ref" value="${esc(cfg.projectRef || '')}" placeholder="SEU-PROJECT-REF"></label>
+      <label>Schema REST<input id="supabase-schema" value="${esc(cfg.schema || 'public')}"></label>
+      <label>Tabela de Projetos<input id="supabase-projects-table" value="${esc(cfg.projectsTable || 'projects')}"></label>
+      <label>Tabela TAP<input id="supabase-tap-table" value="${esc(cfg.tapTable || 'tap_entries')}"></label>
+      <label>Publishable/Anon Key<input id="supabase-publishable-key" type="password" value="${esc(cfg.publishableKey || cfg.anonKey || '')}" placeholder="eyJ... ou sb_publishable_..."></label>
+      <label>Service Role/Secret Key<input id="supabase-secret-key" type="password" value="${esc(cfg.secret || cfg.serviceRole || '')}" placeholder="sb_secret_... ou service_role"></label>
+      <label>REST API URL<input id="supabase-api-url" value="${esc(cfg.apiUrl || '')}" placeholder="https://SEU-PROJECT-REF.supabase.co/rest/v1/"></label>
+    </div>
+    <div class="supabase-actions">
+      <button type="button" data-save-supabase>Salvar Supabase</button>
+      <button type="button" data-test-supabase>Testar Conexão Supabase</button>
+    </div>
+    <pre id="supabase-config-log">Preencha as credenciais do Supabase e salve para ativar a integração.</pre>
+  </section>`;
+}
+function collectSupabaseConfig() {
+  const url = normalizeSupabaseUrl(document.getElementById('supabase-url').value);
+  const publishableKey = document.getElementById('supabase-publishable-key').value.trim();
+  const secret = document.getElementById('supabase-secret-key').value.trim();
+  return {
+    url,
+    apiUrl: document.getElementById('supabase-api-url').value.trim() || `${url}/rest/v1/`,
+    projectRef: document.getElementById('supabase-project-ref').value.trim() || url.replace(/^https?:\/\//, '').split('.')[0] || '',
+    schema: document.getElementById('supabase-schema').value.trim() || 'public',
+    projectsTable: document.getElementById('supabase-projects-table').value.trim() || 'projects',
+    tapTable: document.getElementById('supabase-tap-table').value.trim() || 'tap_entries',
+    publishableKey,
+    anonKey: publishableKey,
+    secret,
+    serviceRole: secret,
+    currentKey: '',
+    previousKey: '',
+  };
+}
+function saveSupabaseConfig() {
+  const log = document.getElementById('supabase-config-log');
+  try {
+    const supabase = collectSupabaseConfig();
+    const stored = JSON.parse(localStorage.getItem(SUPABASE_CONFIG_STORAGE_KEY) || '{}');
+    localStorage.setItem(SUPABASE_CONFIG_STORAGE_KEY, JSON.stringify({ ...stored, supabase }));
+    log.textContent = `Configuração Supabase salva em ${SUPABASE_CONFIG_STORAGE_KEY}. URL: ${supabase.url}`;
+    return supabase;
+  } catch (error) {
+    log.textContent = `Erro ao salvar: ${error.message}`;
+    return null;
+  }
+}
+async function testSupabaseConfig() {
+  const log = document.getElementById('supabase-config-log');
+  try {
+    const cfg = collectSupabaseConfig();
+    const key = cfg.secret || cfg.serviceRole || cfg.publishableKey || cfg.anonKey;
+    if (!key) throw new Error('Informe uma chave Supabase para testar.');
+    const endpoint = `${cfg.url}/rest/v1/${cfg.projectsTable}?select=id,code,name&limit=1`;
+    const response = await fetch(endpoint, { headers: { apikey: key, Authorization: `Bearer ${key}` } });
+    const text = await response.text();
+    if (!response.ok) throw new Error(`HTTP ${response.status}: ${text}`);
+    saveSupabaseConfig();
+    log.textContent = `Conexão OK. Endpoint: ${endpoint}\nRetorno: ${text}`;
+  } catch (error) {
+    log.textContent = `Falha na conexão: ${error.message}`;
+  }
+}
+
 function notFound() { return `<section class="hero"><h1>Página não encontrada</h1><p>Use o menu lateral para continuar navegando.</p></section>`; }
 const routes = {
   '/home': homePage, '/portfolio': portfolioPage, '/agf': agfPage, '/agf/arvore': gateTreePage, '/cockpit': cockpitPage,
@@ -205,7 +295,7 @@ const routes = {
   '/indicadores': () => genericPage('Indicadores', 'Métricas operacionais e executivas do portfólio.'),
   '/tap.html': tapPage,
   '/orbit': () => genericPage('ORBIT', 'Radar de maturidade, riscos e oportunidades.'),
-  '/configuracoes': () => genericPage('Configurações', 'Preferências e parâmetros da aplicação.'),
+  '/configuracoes': settingsPage,
 };
 function render() {
   const path = appPath();
@@ -237,6 +327,8 @@ function bindEvents() {
   document.querySelectorAll('[data-profile]').forEach(button => button.addEventListener('click', () => { selectedProfile = button.dataset.profile; render(); }));
   document.querySelector('[data-logout]')?.addEventListener('click', () => { localStorage.removeItem(STORAGE_KEY); selectedProfile = ''; go('/login'); });
   document.querySelector('[data-toggle-menu]')?.addEventListener('click', () => { sidebarOpen = !sidebarOpen; render(); });
+  document.querySelector('[data-save-supabase]')?.addEventListener('click', saveSupabaseConfig);
+  document.querySelector('[data-test-supabase]')?.addEventListener('click', testSupabaseConfig);
   document.getElementById('login-form')?.addEventListener('submit', event => {
     event.preventDefault();
     const error = document.getElementById('login-error');
