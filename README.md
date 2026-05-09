@@ -32,6 +32,7 @@ Com isso, riscos, pendências, gaps, atividades, decisões, issues, mudanças, e
 - `/times`
 - `/indicadores`
 - `/orbit`
+- `/tap.html`
 - `/configuracoes`
 - `/agf`
 - `/agf/arvore`

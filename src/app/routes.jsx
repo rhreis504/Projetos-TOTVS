@@ -11,6 +11,7 @@ import GapsPage from '../pages/GapsPage';
 import TeamsPage from '../pages/TeamsPage';
 import IndicatorsPage from '../pages/IndicatorsPage';
 import OrbitPage from '../pages/OrbitPage';
+import TapPage from '../pages/TapPage';
 import SettingsPage from '../pages/SettingsPage';
 import AgfOverviewPage from '../pages/agf/AgfOverviewPage';
 import GateTreePage from '../pages/agf/GateTreePage';
@@ -27,7 +28,7 @@ import { getActiveProjectId, setActiveProject } from '../utils/projectContext';
 const pages = {
   '/home': HomePage, '/portfolio': PortfolioPage, '/cockpit': CockpitPage, '/status-report': StatusReportPage,
   '/riscos': RisksPage, '/pendencias': PendingItemsPage, '/gaps': GapsPage, '/times': TeamsPage,
-  '/indicadores': IndicatorsPage, '/orbit': OrbitPage, '/configuracoes': SettingsPage, '/agf': AgfOverviewPage,
+  '/indicadores': IndicatorsPage, '/orbit': OrbitPage, '/tap.html': TapPage, '/configuracoes': SettingsPage, '/agf': AgfOverviewPage,
   '/agf/arvore': GateTreePage,
 };
 
