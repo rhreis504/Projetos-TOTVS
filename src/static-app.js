@@ -8,7 +8,7 @@ const profiles = {
 const menu = [
   ['Home', '/home', '▦'], ['Portfólio de Projetos', '/portfolio', '▣'], ['Jornada AGF', '/agf', '◆'],
   ['Cockpit Executivo', '/cockpit', '◈'], ['Status Report', '/status-report', '▤'], ['Pendências', '/pendencias', '✓'],
-  ['Riscos', '/riscos', '⚠'], ['Gaps', '/gaps', '↯'], ['Times de Implantação', '/times', '●'], ['Indicadores', '/indicadores', '▲'], ['ORBIT', '/orbit', '◎'],
+  ['Riscos', '/riscos', '⚠'], ['Gaps', '/gaps', '↯'], ['Times de Implantação', '/times', '●'], ['Indicadores', '/indicadores', '▲'], ['TAP', '/tap.html', '▧'], ['ORBIT', '/orbit', '◎'],
 ];
 const systemMenu = [['Configurações', '/configuracoes', '⚙']];
 const pageTitles = Object.fromEntries([...menu, ...systemMenu].map(([label, path]) => [path, label]));
@@ -178,6 +178,19 @@ function gatePage(id, projectId) {
   if (id === '3') return gate3ExecutionPage(project);
   return `<section class="hero"><h1>${project ? `${esc(project.name)} · ` : ''}${esc(gate[1])}</h1><p>${esc(gate[2])}</p></section><section class="grid"><article class="card"><h3>Status</h3><div class="kpi">${esc(gate[3])}</div>${badge(gate[3], gate[4])}</article><article class="card wide"><h3>Critérios de aceite</h3><ul class="list"><li><span>Plano validado com stakeholders</span>${badge('OK')}</li><li><span>Riscos classificados e mitigados</span>${badge('Monitorar', 'amber')}</li><li><span>Evidências anexadas ao comitê</span>${badge('Em curso', 'amber')}</li></ul>${project ? `<a class="action-link" href="${href(`/projetos/${project.id}/agf`)}" data-route="/projetos/${project.id}/agf">Voltar à Jornada AGF →</a>` : ''}</article></section>`;
 }
+
+function tapPage() {
+  return `<section class="hero"><h1>TAP · Termo de Abertura do Projeto</h1><p>Formalize a abertura, objetivos, escopo inicial, governança, premissas e critérios de sucesso antes de avançar na Jornada AGF.</p></section>
+  <section class="grid">
+    <article class="card wide"><h3>Identificação do projeto</h3><ul class="list"><li><span>Projeto</span><strong>Implantação RH Rossi</strong></li><li><span>Cliente</span><strong>Rossi Supermercados</strong></li><li><span>Patrocinador</span><strong>Diretoria de RH</strong></li><li><span>Gerente do projeto</span><strong>PMO TOTVS</strong></li></ul></article>
+    <article class="card"><h3>Status do TAP</h3><div class="kpi">Em validação</div>${badge('Pronto para assinatura', 'amber')}</article>
+    <article class="card"><h3>Objetivos</h3><p class="muted">Alinhar expectativas, responsabilidades, macroescopo e critérios executivos para iniciar o projeto com governança.</p></article>
+    <article class="card"><h3>Escopo inicial</h3><p class="muted">RH, folha, ponto, admissão digital, ATS, LMS/LXP, Feedz, Quirons e Ahgora.</p></article>
+    <article class="card"><h3>Premissas</h3><p class="muted">Disponibilidade de key users, ambientes preparados, dados saneados e calendário de comitês confirmado.</p></article>
+    <article class="card full"><h3>Checklist de abertura</h3><ul class="list"><li><span>Business case e objetivos aprovados</span>${badge('OK')}</li><li><span>Governança e papéis definidos</span>${badge('OK')}</li><li><span>Riscos iniciais registrados</span>${badge('Atenção', 'amber')}</li><li><span>Critérios de aceite do TAP</span>${badge('Em validação', 'amber')}</li></ul><a class="action-link" href="${href('/agf')}" data-route="/agf">Continuar para Jornada AGF →</a></article>
+  </section>`;
+}
+
 function cockpitPage() { return `<section class="hero"><h1>Cockpit Executivo</h1><p>Indicadores executivos para tomada de decisão.</p></section><section class="grid">${kpi('SPI', '0.96', 'Cronograma sob controle')}${kpi('CPI', '1.02', 'Custo saudável')}${kpi('Satisfação', '91%', 'Pesquisa semanal')}<article class="card full"><h3>Alertas executivos</h3><ul class="list">${risks.slice(0,3).map(([r, l, c]) => `<li><span>${esc(r)}</span>${badge(l, c)}</li>`).join('')}</ul></article></section>`; }
 function statusReportPage() { return `<section class="hero"><h1>Status Report</h1><p>Resumo semanal padronizado para comunicação com stakeholders.</p></section><section class="grid"><article class="card full"><h3>Resumo</h3><p>A implantação segue dentro do plano, com atenção especial para integração fiscal e disponibilidade de key users.</p></article>${kpi('Concluído', '68%', 'Evolução geral')}${kpi('Próximo marco', '13/05', 'Homologação')}${kpi('Decisões', '3', 'Pendentes no comitê')}</section>`; }
 function pendingPage() { return `<section class="hero"><h1>Pendências</h1><p>Itens de ação, responsáveis e prazos.</p></section><section class="grid"><article class="card full table-wrap"><table><thead><tr><th>Item</th><th>Responsável</th><th>Prazo</th></tr></thead><tbody>${pending.map(([i,o,d]) => `<tr><td>${esc(i)}</td><td>${esc(o)}</td><td>${esc(d)}</td></tr>`).join('')}</tbody></table></article></section>`; }
@@ -190,6 +203,7 @@ const routes = {
   '/gaps': () => genericPage('Gaps', 'Acompanhe lacunas, impactos e planos de ação.'),
   '/times': () => genericPage('Times de Implantação', 'Visão dos squads, papéis e capacidade.'),
   '/indicadores': () => genericPage('Indicadores', 'Métricas operacionais e executivas do portfólio.'),
+  '/tap.html': tapPage,
   '/orbit': () => genericPage('ORBIT', 'Radar de maturidade, riscos e oportunidades.'),
   '/configuracoes': () => genericPage('Configurações', 'Preferências e parâmetros da aplicação.'),
 };
