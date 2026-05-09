@@ -56,9 +56,11 @@ O projeto obrigatório `PRJ-001` representa a implantação RH Rossi, vinculada 
 
 Os utilitários `src/utils/gate3Health.js` e `src/utils/gate3Status.js` calculam, de forma simulada, a saúde do projeto e o status do Gate 3. Dependências bloqueadas, issues críticas, riscos críticos, pendências vencidas, decisões vencidas, gaps sem decisão, mudanças em análise e entregáveis atrasados impactam a classificação exibida na tela.
 
-## Backend e integrações futuras
+## Backend e integrações Supabase
 
-Não há backend, banco de dados, Supabase, autenticação real, CRUD persistente ou upload real nesta etapa. A estrutura foi organizada para permitir futura integração, mantendo dados mockados e componentes modulares.
+A aplicação continua usando dados mockados para navegação e demonstração, mas agora inclui uma estrutura versionada para implantação Supabase do Cockpit Rossi/TOTVS. As migrations em `supabase/migrations/`, o importador `scripts/import_spreadsheets_to_supabase.mjs`, o exemplo `.env.supabase.example` e o guia `docs/implantacao_supabase.md` preparam a criação das tabelas `projects`, `spreadsheet_sources`, `issues`, `risks`, `gaps`, `activities`, `import_jobs`, `source_rows` e `tap_entries`.
+
+A tela `/configuracoes` inclui uma seção **Supabase** para salvar `Project URL`, `Project Ref`, schema, tabelas e chaves REST no `localStorage`, na chave `totvs_cockpit_config`, além de um teste de conexão ao endpoint REST de `projects`. Não versione chaves reais de `service_role`/`secret`.
 
 ## Instalação
 

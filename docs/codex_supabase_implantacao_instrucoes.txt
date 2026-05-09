@@ -1,0 +1,44 @@
+INSTRUÇÕES PARA COLAR NO CODEX DO OUTRO PROJETO - IMPLANTAÇÃO SUPABASE ROSSI/TOTVS
+======================================================================================
+
+OBJETIVO
+- Criar a mesma estrutura Supabase deste Cockpit Rossi/TOTVS no projeto de destino.
+- Criar `supabase/migrations` com as três migrations SQL.
+- Criar `scripts/import_spreadsheets_to_supabase.mjs` para carga inicial das planilhas.
+- Criar `.env.supabase.example`, `supabase/setup/supabase-configurador.html` e `docs/implantacao_supabase.md`.
+- Adicionar no menu Configurações uma seção “Supabase” que salve em `localStorage.totvs_cockpit_config.supabase`.
+
+PASSOS
+1. Inspecione o projeto sem `ls -R`/`grep -R`:
+   - `pwd`
+   - `find .. -name AGENTS.md -print`
+   - `rg --files -g '!node_modules' -g '!vendor' | sed -n '1,200p'`
+   - `rg -n "Configurações|Configuracoes|settings|menu|nav|sidebar|Supabase|supabase" . -g '!node_modules' -g '!vendor'`
+
+2. Se este repositório estiver disponível, rode o instalador:
+   `node scripts/install_supabase_stack.mjs /caminho/do/outro-projeto --patch-index --force`
+
+3. No projeto de destino, adapte a tela Configurações para incluir os campos:
+   - Project URL
+   - Project Ref
+   - Schema REST (`public`)
+   - Tabela de Projetos (`projects`)
+   - Tabela TAP (`tap_entries`)
+   - Publishable/Anon Key
+   - Service Role/Secret Key
+   - REST API URL (`https://SEU-PROJECT-REF.supabase.co/rest/v1/`)
+
+4. O botão “Testar Conexão Supabase” deve executar GET em:
+   `$NEXT_PUBLIC_SUPABASE_URL/rest/v1/projects?select=id,code,name&limit=1`
+   com headers `apikey` e `Authorization: Bearer` usando a chave informada.
+
+5. Rode os checks:
+   - `node --check scripts/import_spreadsheets_to_supabase.mjs`
+   - `node --check scripts/install_supabase_stack.mjs` (se copiado)
+   - `rg -n "supabase|Supabase|totvs_cockpit_config|projectsTable|tapTable" . -g '!node_modules' -g '!vendor'`
+   - `git diff --check`
+   - testes/build/lint existentes no `package.json`.
+
+6. Faça commit:
+   `git add supabase scripts .env.supabase.example docs src index.html`
+   `git commit -m "Add Supabase integration setup"`
